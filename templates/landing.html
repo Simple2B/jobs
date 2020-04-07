@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery-3.4.1.js"
+        integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+    <!-- bootstrap css+js -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+    <script>
+        $(document).ready(function () {
+            $("#toggleSignIn").click(function () {
+                $("#toggleSignIn").addClass("active");
+                $(".my-signin").removeClass("d-none");
+
+                $("#toggleSignUp").removeClass("active");
+                $(".my-signup").addClass("d-none");
+            });
+
+            $("#toggleSignUp").click(function () {
+                $("#toggleSignUp").addClass("active");
+                $(".my-signup").removeClass("d-none");
+
+                $("#toggleSignIn").removeClass("active");
+                $(".my-signin").addClass("d-none");
+            });
+        });
+    </script>
+
+</head>
+
+<body>
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-6">
+                {{role}}
+                {% for error in form.errors %}
+                <p>{{error}}</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-sm-6 col-lg-3">
+                <button type="button" class="btn btn-outline-success active" id="toggleSignIn">Sign in</button>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <button type="button" class="btn btn-outline-success" id="toggleSignUp">Sign up</button>
+            </div>
+        </div>
+
+        <div class="my-signin">
+            <form action="/login" method="post">
+                {{ form.hidden_tag() }}
+                <div class="form-group row my_in">
+                    <label for="usernameInput" class="col-md-2 col-form-label">
+                        username
+                    </label>
+                    <div class="col-md-4">
+                        <input type="text" id="usernameInput" class="form-control" name="username">
+                    </div>
+                </div>
+
+                <div class="form-group row my_in">
+                    <div class="col-md-2">
+                        <p>password</p>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control"  name="password">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <input type="submit" class="btn btn-primary"  value="submit">
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="my-signup d-none">
+            <form action="/signup" method="post">
+                {{ form.hidden_tag() }}
+                <div class="form-group row">
+                    <div class="col-md-2">
+                        <p>e-mail</p>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="email">
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-2">
+                        <p>username</p>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="username">
+                    </div>
+                </div>
+
+                <div class="row form-group">
+                    <div class="col-md-2">
+                        <p>password</p>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="password">
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-7 form-check">
+                        <input class="form-check-input" type="checkbox" name="agree">
+                        <label class="form-check-label">accept our <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">terms and conditions</a></label>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-7 form-check">
+                        <input class="form-check-input" type="checkbox" name="subscribe">
+                        <label class="form-check-label">subscrabe to newsletter</label>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-md-3">
+                        <input type="submit" value="submit">
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -23,11 +23,11 @@ class LoginForm(FlaskForm):
 
 
 class SignupForm(LoginForm):
-    e_mail = StringField('email', validators=[DataRequired()])
+    email = StringField('email', validators=[DataRequired()])
 
     @property
-    def email(self):
-        return self.e_mail.data
+    def e_mail(self):
+        return self.email.data
 
 
 @app.route("/")
@@ -44,7 +44,7 @@ def login():
         with db_session_ctx(read_only=True) as dsession:
             user = dsession.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
-                session
+                session['role'] = user.role
                 return "hello, {}".format(form.name)
             else:
                 return "no such user"
@@ -61,7 +61,7 @@ def signup():
             if user:
                 return "user {} already exists".format(form.name)
             else:
-                new_user = User(form.name, form.email, form.passwd, UserRoleEnum.USER)
+                new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.USER)
                 dsession.add(new_user)
                 dsession.commit()
                 return "user {} created".format(new_user.name)

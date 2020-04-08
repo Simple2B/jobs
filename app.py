@@ -2,6 +2,8 @@ from flask import Flask, render_template, session
 from flask_wtf import FlaskForm
 from wtforms import StringField
 from wtforms.validators import DataRequired
+from session import db_session_ctx
+from models import User, UserRoleEnum
 
 app = Flask(__name__)
 app.secret_key = "adlfkhLSDHFlkshfsdbfnBSMDNFBSkjweKDFJhsldkjhf"
@@ -20,10 +22,18 @@ class LoginForm(FlaskForm):
         return self.password.data
 
 
+class SignupForm(LoginForm):
+    e_mail = StringField('email', validators=[DataRequired()])
+
+    @property
+    def email(self):
+        return self.e_mail.data
+
+
 @app.route("/")
 def home():
     if 'role' not in session:
-        session['role'] = 'guest'
+        session['role'] = UserRoleEnum.GUEST.value
     return render_template("landing.html", form=LoginForm(), role=session['role'])
 
 
@@ -31,12 +41,29 @@ def home():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        if form.name == "ton" and form.passwd == "123":
-            return "hello, ton"
-        else:
-            return "no such user"
+        with db_session_ctx(read_only=True) as dsession:
+            user = dsession.query(User).filter(User.name == form.name).first()
+            if user and user.password == form.passwd:
+                session
+                return "hello, {}".format(form.name)
+            else:
+                return "no such user"
+    else:
+        return "error in form"
 
 
 @app.route("/signup", methods=['POST'])
 def signup():
-    pass
+    form = SignupForm()
+    if form.validate_on_submit():
+        with db_session_ctx(read_only=True) as dsession:
+            user = dsession.query(User).filter(User.name == form.name).first()
+            if user:
+                return "user {} already exists".format(form.name)
+            else:
+                new_user = User(form.name, form.email, form.passwd, UserRoleEnum.USER)
+                dsession.add(new_user)
+                dsession.commit()
+                return "user {} created".format(new_user.name)
+    else:
+        return render_template("landing.html", form=form, role=session['role'])

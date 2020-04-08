@@ -2,8 +2,15 @@ from sqlalchemy import Column, Integer, String  # , ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy.orm import relationship
 from session import db_engine
+from enum import Enum
 
 ModelBase = declarative_base(bind=db_engine)
+
+
+class UserRoleEnum(Enum):
+    ADMIN = 'admin'
+    USER = 'user'
+    GUEST = 'guest'
 
 
 class User(ModelBase):
@@ -17,11 +24,11 @@ class User(ModelBase):
     role = Column(String)  # , ForeignKey('user_role.name'))
     # user_role = relationship("UserRole")
 
-    def __init__(self, name, email, passwd, role):
+    def __init__(self, name, email, passwd, role: UserRoleEnum):
         self.name = name
         self.email = email
         self.password = passwd
-        self.role = role
+        self.role = role.value
 
     def __repr__(self):
         return "id: {}\tname: {}\temail: {}\trole: {}".format(self.id, self.name, self.email, self.role)

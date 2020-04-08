@@ -1,5 +1,5 @@
 from invoke import task  # noqa
-from models import ModelBase, User  # , UserRole
+from models import ModelBase, User, UserRoleEnum  # , UserRole
 from session import DbSession, db_session_ctx
 
 
@@ -9,7 +9,7 @@ def renew_db(_):
     ModelBase.metadata.create_all()
     session = DbSession()
     # role_admin = UserRole('admin')
-    ton = User(name='ton', email='ton@gmail.com', passwd='123', role='admin')
+    ton = User(name='ton', email='ton@gmail.com', passwd='123', role=UserRoleEnum.ADMIN.value)
     # session.add(role_admin)
     session.add(ton)
     session.commit()

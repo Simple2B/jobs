@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, request
+from flask import Flask, render_template, session, request, redirect
 from flask_wtf import FlaskForm
 from wtforms import StringField
 from wtforms.validators import DataRequired
@@ -46,9 +46,7 @@ class SignupForm(LoginForm):
 
 @app.route("/")
 def home():
-    if 'role' not in session:
-        session['role'] = UserRoleEnum.GUEST.value
-    return render_template("landing.html", form=LoginForm(), role=session['role'])
+    return render_template("landing.html", form=LoginForm())
 
 
 @app.route("/login", methods=['POST'])
@@ -58,7 +56,7 @@ def login():
         with db_session_ctx(read_only=True) as dsession:
             user: User = dsession.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
-                session['role'] = user.role
+                session['user_id'] = user.id
                 if not user.is_active:
                     return "User is inactive"
                 if not user.is_email_confirmed:
@@ -73,7 +71,7 @@ def login():
 def signup():
     form = SignupForm()
     if form.validate_on_submit():
-        with db_session_ctx(read_only=True) as dsession:
+        with db_session_ctx(read_only=False) as dsession:
             user = dsession.query(User).filter(User.name == form.name).first()
             if user:
                 return "user {} already exists".format(form.name)
@@ -81,7 +79,6 @@ def signup():
                 new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.USER)
                 new_user.send_confirmation_email(mail)
                 dsession.add(new_user)
-                dsession.commit()
                 return "user {} created".format(new_user.name)
     else:
         return render_template("landing.html", form=form, role=session['role'])
@@ -105,4 +102,11 @@ def confirm():
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
-    return "TODO"
+    user_id = session['user_id']
+    if user_id is None:
+        redirect("/", 302)
+    else:
+        with db_session_ctx() as dsession:
+            user: User = dsession.query(User).filter(User.id == user_id).first()
+            user.send_confirmation_email(mail)
+            return "check your mail"

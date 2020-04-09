@@ -1,18 +1,18 @@
 from invoke import task  # noqa
 from models import ModelBase, User, UserRoleEnum  # , UserRole
-from session import DbSession, db_session_ctx
+from session import db_session_ctx
 
 
 @task
 def renew_db(_):
     ModelBase.metadata.drop_all()
     ModelBase.metadata.create_all()
-    session = DbSession()
-    # role_admin = UserRole('admin')
-    ton = User(name='ton', email='an.malyshko@gmail.com', passwd='123', role=UserRoleEnum.ADMIN)
-    # session.add(role_admin)
-    session.add(ton)
-    session.commit()
+    with db_session_ctx(read_only=False) as dsession:
+        # role_admin = UserRole('admin')
+        ton = User(name='ton', email='an.malyshko@gmail.com', passwd='123', role=UserRoleEnum.ADMIN)
+        ton.is_email_confirmed = True
+        # session.add(role_admin)
+        dsession.add(ton)
 
 
 @task

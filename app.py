@@ -56,7 +56,17 @@ def fetch_user_by_id():
 
 @app.route("/")
 def home():
-    return render_template("landing.html", form=LoginForm())
+    if not is_user_logged_in():
+        return render_template("landing.html", form=LoginForm())
+    user = fetch_user_by_id()
+    if not user.is_active:
+        return "User is inactive"
+    if not user.is_email_confirmed:
+        return render_template("confirm_email.html", user=user)
+    if user.role == UserRoleEnum.ADMIN.value:
+        return redirect("/admin", 302)
+    # TODO if user.is_test_passed: redirect("/thankyou")
+    return "TODO would you like to pass a test?"
 
 
 @app.route("/login", methods=['POST'])
@@ -67,13 +77,7 @@ def login():
             user: User = dsession.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
                 session['user_id'] = user.id
-                if not user.is_active:
-                    return "User is inactive"
-                if not user.is_email_confirmed:
-                    return render_template("confirm_email.html", user=user)
-                if user.role == UserRoleEnum.ADMIN.value:
-                    return redirect("/admin", 302)
-                return "hello, user"
+                return redirect("/", 200)
             else:
                 return "no such user"
     else:

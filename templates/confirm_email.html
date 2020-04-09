@@ -5,6 +5,8 @@
     <body>
         <p>Hello, {{user.name}}</p>
         <p>We have sent you an confirmation e-mail, please confirm your e-mail address by following link inside.</p>
-        <a href="#">Resend confirmation e-mail</a>
+        <form action="/confirm_email/resend" method="POST">
+            <input type="submit" value="Resend confirmation e-mail">
+        </form>
     </body>
 </html>

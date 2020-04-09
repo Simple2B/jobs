@@ -2,3 +2,4 @@
 __pycache__/
 *.db
 secret_settings.py
+test.py

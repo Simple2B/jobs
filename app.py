@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session
+from flask import Flask, render_template, session, request
 from flask_wtf import FlaskForm
 from wtforms import StringField
 from wtforms.validators import DataRequired
@@ -85,3 +85,24 @@ def signup():
                 return "user {} created".format(new_user.name)
     else:
         return render_template("landing.html", form=form, role=session['role'])
+
+
+@app.route("/confirm_email", methods=['GET'])
+def confirm():
+    token = request.args.get('token')
+    if token is None:
+        return render_template("confirm_email.html")
+    with db_session_ctx(read_only=False) as dsession:
+        user = dsession.query(User).filter(User.email_confirmation_token == token).first()
+        if user is None:
+            return "token expired or does not exist"
+        else:
+            if user.is_email_confirmed:
+                return "email already confirmed"
+            user.is_email_confirmed = True
+            return "email successfully confirmed"
+
+
+@app.route("/confirm_email/resend", methods=['POST'])
+def resend():
+    return "TODO"

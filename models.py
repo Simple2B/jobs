@@ -27,7 +27,7 @@ class User(ModelBase):
     # user_role = relationship("UserRole")
     is_active = Column(Boolean)
     is_email_confirmed = Column(Boolean)
-    email_confirmation_token = None
+    email_confirmation_token = Column(String)
 
     def __init__(self, name, email, passwd, role: UserRoleEnum):
         self.name = name
@@ -39,6 +39,7 @@ class User(ModelBase):
 
     def send_confirmation_email(self, mail: Mail):
         self.email_confirmation_token = token_hex(32)
+        print("debug: email_confirmation_token = ", self.email_confirmation_token)
         host = "localhost:5000"  # TODO: global variable
         subject = 'Confirm registration on simple2b.com'
         recipients = [self.email]
@@ -49,8 +50,10 @@ class User(ModelBase):
         mail.send(confirm_msg)
 
     def __repr__(self):
-        print_template = "id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}\tis_email_confirmed: {}"
-        return print_template.format(self.id, self.name, self.email, self.role, self.is_active, self.is_email_confirmed)
+        print_template = "id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}\
+\tis_email_confirmed: {}\temail_confirmation_token: {}"
+        return print_template.format(self.id, self.name, self.email, self.role,
+                                     self.is_active, self.is_email_confirmed, self.email_confirmation_token)
 
 # в sqlite по умолчанию отключены foreign keys (https://www.sqlite.org/foreignkeys.html пункт 2)
 # включать их - много мороки, а пользы мало: только возможность прои создании пользователя убедиться, что такая роль существует

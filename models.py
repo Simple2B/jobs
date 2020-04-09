@@ -49,6 +49,18 @@ class User(ModelBase):
         confirm_msg = Message(subject=subject, recipients=recipients, sender=sender, html=html)
         mail.send(confirm_msg)
 
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "password": self.password,
+            "role": self.role,
+            "is_active": self.is_active,
+            "is_email_confirmed": self.is_email_confirmed,
+            "email_confirmation_token": self.email_confirmation_token
+        }
+
     def __repr__(self):
         print_template = "id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}\
 \tis_email_confirmed: {}\temail_confirmation_token: {}"

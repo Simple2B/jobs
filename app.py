@@ -44,6 +44,16 @@ class SignupForm(LoginForm):
         return self.email.data
 
 
+def is_user_logged_in():
+    return 'user_id' in session
+
+
+def fetch_user_by_id():
+    with db_session_ctx(read_only=True) as dbses:
+        user: User = dbses.query(User).filter(User.id == session['user_id']).first()
+        return user
+
+
 @app.route("/")
 def home():
     return render_template("landing.html", form=LoginForm())
@@ -61,6 +71,9 @@ def login():
                     return "User is inactive"
                 if not user.is_email_confirmed:
                     return render_template("confirm_email.html", user=user)
+                if user.role == UserRoleEnum.ADMIN.value:
+                    return redirect("/admin", 302)
+                return "hello, user"
             else:
                 return "no such user"
     else:
@@ -87,8 +100,10 @@ def signup():
 @app.route("/confirm_email", methods=['GET'])
 def confirm():
     token = request.args.get('token')
+    if not is_user_logged_in():
+        return redirect("/", 403)
     if token is None:
-        return render_template("confirm_email.html")
+        return render_template("confirm_email.html", user=fetch_user_by_id())
     with db_session_ctx(read_only=False) as dsession:
         user = dsession.query(User).filter(User.email_confirmation_token == token).first()
         if user is None:
@@ -102,11 +117,24 @@ def confirm():
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
-    user_id = session['user_id']
-    if user_id is None:
-        redirect("/", 302)
+    if 'user_id' not in session:
+        return redirect("/", 302)
     else:
+        user_id = session['user_id']
         with db_session_ctx() as dsession:
             user: User = dsession.query(User).filter(User.id == user_id).first()
             user.send_confirmation_email(mail)
             return "check your mail"
+
+
+@app.route("/admin", methods=['GET'])
+def admin_console():
+    if 'user_id' not in session:
+        return redirect("/", 403)
+    user_id = session['user_id']
+    with db_session_ctx(read_only=True) as dbses:
+        user = dbses.query(User).filter(User.id == user_id).first()
+        if user.role != UserRoleEnum.ADMIN.value:
+            return redirect("/", 403)
+        else:
+            return render_template("admin_console.html", users=dbses.query(User).all())

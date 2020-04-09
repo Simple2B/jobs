@@ -11,8 +11,11 @@ def renew_db(_):
         # role_admin = UserRole('admin')
         ton = User(name='ton', email='an.malyshko@gmail.com', passwd='123', role=UserRoleEnum.ADMIN)
         ton.is_email_confirmed = True
+        test_user = User(name='ton_user', email='an.malyshko@gmail.com', passwd='123', role=UserRoleEnum.USER)
+        test_user.is_email_confirmed = True
         # session.add(role_admin)
         dsession.add(ton)
+        dsession.add(test_user)
 
 
 @task

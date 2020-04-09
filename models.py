@@ -1,8 +1,10 @@
-from sqlalchemy import Column, Integer, String  # , ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean  # , ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy.orm import relationship
 from session import db_engine
 from enum import Enum
+from secrets import token_hex
+from flask_mail import Mail, Message
 
 ModelBase = declarative_base(bind=db_engine)
 
@@ -23,15 +25,32 @@ class User(ModelBase):
     password = Column(String)
     role = Column(String)  # , ForeignKey('user_role.name'))
     # user_role = relationship("UserRole")
+    is_active = Column(Boolean)
+    is_email_confirmed = Column(Boolean)
+    email_confirmation_token = None
 
     def __init__(self, name, email, passwd, role: UserRoleEnum):
         self.name = name
         self.email = email
         self.password = passwd
         self.role = role.value
+        self.is_active = True
+        self.is_email_confirmed = False
+
+    def send_confirmation_email(self, mail: Mail):
+        self.email_confirmation_token = token_hex(32)
+        host = "localhost:5000"  # TODO: global variable
+        subject = 'Confirm registration on simple2b.com'
+        recipients = [self.email]
+        sender = 'info@simple2b.com'
+        msg_template = "<p>confirmation link: http://{host}/confirm_email?token={token}</p>"
+        html = msg_template.format(host=host, token=self.email_confirmation_token)
+        confirm_msg = Message(subject=subject, recipients=recipients, sender=sender, html=html)
+        mail.send(confirm_msg)
 
     def __repr__(self):
-        return "id: {}\tname: {}\temail: {}\trole: {}".format(self.id, self.name, self.email, self.role)
+        print_template = "id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}\tis_email_confirmed: {}"
+        return print_template.format(self.id, self.name, self.email, self.role, self.is_active, self.is_email_confirmed)
 
 # в sqlite по умолчанию отключены foreign keys (https://www.sqlite.org/foreignkeys.html пункт 2)
 # включать их - много мороки, а пользы мало: только возможность прои создании пользователя убедиться, что такая роль существует

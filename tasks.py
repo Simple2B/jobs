@@ -9,7 +9,7 @@ def renew_db(_):
     ModelBase.metadata.create_all()
     session = DbSession()
     # role_admin = UserRole('admin')
-    ton = User(name='ton', email='ton@gmail.com', passwd='123', role=UserRoleEnum.ADMIN.value)
+    ton = User(name='ton', email='an.malyshko@gmail.com', passwd='123', role=UserRoleEnum.ADMIN)
     # session.add(role_admin)
     session.add(ton)
     session.commit()

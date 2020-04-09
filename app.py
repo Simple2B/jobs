@@ -4,9 +4,23 @@ from wtforms import StringField
 from wtforms.validators import DataRequired
 from session import db_session_ctx
 from models import User, UserRoleEnum
+from flask_mail import Mail
+import secret_settings
 
 app = Flask(__name__)
-app.secret_key = "adlfkhLSDHFlkshfsdbfnBSMDNFBSkjweKDFJhsldkjhf"
+app.secret_key = secret_settings.app_secret_key
+
+app.config.update(dict(
+    DEBUG=False,
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False,
+    MAIL_USERNAME='info.simple2b@gmail.com',
+    MAIL_PASSWORD=secret_settings.gmail_account_application_password
+))
+
+mail = Mail(app)
 
 
 class LoginForm(FlaskForm):
@@ -42,10 +56,13 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         with db_session_ctx(read_only=True) as dsession:
-            user = dsession.query(User).filter(User.name == form.name).first()
+            user: User = dsession.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
                 session['role'] = user.role
-                return "hello, {}".format(form.name)
+                if not user.is_active:
+                    return "User is inactive"
+                if not user.is_email_confirmed:
+                    return render_template("confirm_email.html", user=user)
             else:
                 return "no such user"
     else:
@@ -62,6 +79,7 @@ def signup():
                 return "user {} already exists".format(form.name)
             else:
                 new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.USER)
+                new_user.send_confirmation_email(mail)
                 dsession.add(new_user)
                 dsession.commit()
                 return "user {} created".format(new_user.name)

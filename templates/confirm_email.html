@@ -1,12 +1,8 @@
-<html>
-    <head>
-
-    </head>
-    <body>
-        <p>Hello, {{user.name}}</p>
-        <p>We have sent you an confirmation e-mail, please confirm your e-mail address by following link inside.</p>
-        <form action="/confirm_email/resend" method="POST">
-            <input type="submit" value="Resend confirmation e-mail">
-        </form>
-    </body>
-</html>
+{%extends 'base.html'%}
+{%block content%}
+    <p>Hello, {{user.name}}</p>
+    <p>We have sent you an confirmation e-mail, please confirm your e-mail address by following link inside.</p>
+    <form action="/confirm_email/resend" method="POST">
+        <input type="submit" value="Resend confirmation e-mail">
+    </form>
+{%endblock%}

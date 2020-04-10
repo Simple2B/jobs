@@ -104,10 +104,11 @@ def signup():
 @app.route("/confirm_email", methods=['GET'])
 def confirm():
     token = request.args.get('token')
-    if not is_user_logged_in():
-        return redirect("/", 403)
     if token is None:
-        return render_template("confirm_email.html", user=fetch_user_by_id())
+        if not is_user_logged_in():
+            return redirect("/", 403)
+        else:
+            return render_template("confirm_email.html", user=fetch_user_by_id())
     with db_session_ctx(read_only=False) as dsession:
         user = dsession.query(User).filter(User.email_confirmation_token == token).first()
         if user is None:
@@ -142,3 +143,10 @@ def admin_console():
             return redirect("/", 403)
         else:
             return render_template("admin_console.html", users=dbses.query(User).all())
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    if 'user_id' in session:
+        session.pop('user_id')
+    return render_template("landing.html", form=LoginForm())

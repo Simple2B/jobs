@@ -2,7 +2,6 @@
 
 {%block content%}
 {# see https://bootstrap-4.ru/docs/4.0/components/forms/ #}
-<form action="/skill_test" method="POST">
 <div class="form-group">
     {%for question in skill_test.questions %}
     <p>{{question.question}}</p>
@@ -17,7 +16,15 @@
 
     <p>-------------</p>
     {%endfor%}
-    <input type="submit" value="submit answers">
+    <button type="button" id="submit_btn">submit answers</button>
 </div>
-</form>
+<script>
+    $("#submit_btn").click(function() {
+        $("input[type='radio']:checked").each(function() {
+            console.log(this.name);
+            console.log($(this).val());
+        });
+    });
+</script>
+
 {%endblock%}

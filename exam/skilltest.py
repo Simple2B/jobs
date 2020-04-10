@@ -19,6 +19,9 @@ class SkillTest:
         return res
 
     def as_list_with_answers(self, user_answers: List[Any]):
+        """ представим вопрос в виде dict-а, и допишем в него ответ пользователя.
+        set из таких обновлённых вопросов будем писать в БД в виде строки
+        (что-то вроде json.dumps(SkillTest().as_list_with_answers(SkilltestForm.user_answers))"""
         assert(len(self.questions) == len(user_answers))
         res = []
         for i in range(len(self.questions)):

@@ -144,5 +144,6 @@ def skill_test_get():
 def skill_test_post():
     if not is_user_logged_in():
         return redirect("/", 403)
-
+    user_answers = request.args.get('user_answers')
+    print(user_answers)
     return "thank you!"

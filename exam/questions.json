@@ -1,0 +1,12 @@
+[{
+    "id": 0,
+    "question": "Сколько будет 2+2?",
+    "answers": ["22", "4", "0", "11"],
+    "correct_index": 1
+},
+{
+    "id": 1,
+    "question": "Учиться хочешь?",
+    "answers": ["Да", "Нет"],
+    "correct_index": 0
+}]

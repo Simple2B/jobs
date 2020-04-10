@@ -2,15 +2,20 @@
 {%block content%}
         <table id="example" class="display" style="width:100%">
             <thead>
+
                 <tr>
+                    <th></th>
                     {% for value in users[0].to_dict().keys() %}
                     <th>{{value}}</th>
                     {%endfor%}
                 </tr>
             </thead>
             <tbody>
+
                 {% for user  in users %}
+
                 <tr>
+                    <td><input type="checkbox" id="{{user.id}}"></td>
                     {% for value in user.to_dict().values() %}
                     <td>{{value}}</td>
                     {%endfor%}

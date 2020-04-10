@@ -1,47 +1,21 @@
 from flask import Flask, render_template, session, request, redirect
-from flask_wtf import FlaskForm
-from wtforms import StringField
-from wtforms.validators import DataRequired
-from session import db_session_ctx
-from models import User, UserRoleEnum
 from flask_mail import Mail
+from forms.login_form import LoginForm
+from forms.signup_form import SignupForm
+from models import User, UserRoleEnum
+from exam.skilltest import SkillTest
+from session import db_session_ctx
 import secret_settings
+import json
+
 
 app = Flask(__name__)
 app.secret_key = secret_settings.app_secret_key
 
-app.config.update(dict(
-    DEBUG=False,
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=587,
-    MAIL_USE_TLS=True,
-    MAIL_USE_SSL=False,
-    MAIL_USERNAME='info.simple2b@gmail.com',
-    MAIL_PASSWORD=secret_settings.gmail_account_application_password
-))
+config = json.load(open("config.json"))
+app.config.update(config['mailer'])
 
 mail = Mail(app)
-
-
-class LoginForm(FlaskForm):
-    username = StringField('username', validators=[DataRequired()])
-    password = StringField('password', validators=[DataRequired()])
-
-    @property
-    def name(self):
-        return self.username.data
-
-    @property
-    def passwd(self):
-        return self.password.data
-
-
-class SignupForm(LoginForm):
-    email = StringField('email', validators=[DataRequired()])
-
-    @property
-    def e_mail(self):
-        return self.email.data
 
 
 def is_user_logged_in():
@@ -49,8 +23,8 @@ def is_user_logged_in():
 
 
 def fetch_user_by_id():
-    with db_session_ctx(read_only=True) as dbses:
-        user: User = dbses.query(User).filter(User.id == session['user_id']).first()
+    with db_session_ctx(read_only=True) as db:
+        user: User = db.query(User).filter(User.id == session['user_id']).first()
         return user
 
 
@@ -66,15 +40,15 @@ def home():
     if user.role == UserRoleEnum.ADMIN.value:
         return redirect("/admin", 302)
     # TODO if user.is_test_passed: redirect("/thankyou")
-    return "TODO would you like to pass a test?"
+    return render_template("test_invitation.html", username=user.name)
 
 
 @app.route("/login", methods=['POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        with db_session_ctx(read_only=True) as dsession:
-            user: User = dsession.query(User).filter(User.name == form.name).first()
+        with db_session_ctx(read_only=True) as db:
+            user: User = db.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
                 session['user_id'] = user.id
                 return redirect("/", 200)
@@ -88,15 +62,16 @@ def login():
 def signup():
     form = SignupForm()
     if form.validate_on_submit():
-        with db_session_ctx(read_only=False) as dsession:
-            user = dsession.query(User).filter(User.name == form.name).first()
+        with db_session_ctx() as db:
+            user = db.query(User).filter(User.name == form.name).first()
             if user:
                 return "user {} already exists".format(form.name)
             else:
                 new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.USER)
+                db.add(new_user)
                 new_user.send_confirmation_email(mail)
-                dsession.add(new_user)
                 return "user {} created".format(new_user.name)
+
     else:
         return render_template("landing.html", form=form, role=session['role'])
 
@@ -150,3 +125,9 @@ def logout():
     if 'user_id' in session:
         session.pop('user_id')
     return render_template("landing.html", form=LoginForm())
+
+
+@app.route('/skill_test', methods=['GET'])
+def skill_test_get():
+    skt = SkillTest()
+    return render_template("skill_test.html", skill_test=skt)

@@ -16,7 +16,6 @@ class UserRoleEnum(Enum):
 
 
 class User(ModelBase):
-
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
@@ -50,6 +49,7 @@ class User(ModelBase):
         mail.send(confirm_msg)
 
     def to_dict(self) -> dict:
+        """ convert to dict """
         return {
             "id": self.id,
             "name": self.name,
@@ -62,8 +62,8 @@ class User(ModelBase):
         }
 
     def __repr__(self):
-        print_template = "id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}\
-\tis_email_confirmed: {}\temail_confirmation_token: {}"
+        print_template = """id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}
+\tis_email_confirmed: {}\temail_confirmation_token: {}"""
         return print_template.format(self.id, self.name, self.email, self.role,
                                      self.is_active, self.is_email_confirmed, self.email_confirmation_token)
 

@@ -2,6 +2,7 @@ from flask import Flask, render_template, session, request, redirect
 from flask_mail import Mail
 from forms.login_form import LoginForm
 from forms.signup_form import SignupForm
+from forms.exam_form import ExamForm
 from models import User, UserRoleEnum
 from exam.skilltest import SkillTest
 from session import db_session_ctx
@@ -144,6 +145,7 @@ def skill_test_get():
 def skill_test_post():
     if not is_user_logged_in():
         return redirect("/", 403)
-    user_answers = request.args.get('user_answers')
-    print(user_answers)
+    exam_form = ExamForm()
+    user_answers = exam_form.user_answers.data
+    print(json.loads(user_answers))
     return "thank you!"

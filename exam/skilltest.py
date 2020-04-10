@@ -4,9 +4,10 @@ import json
 
 
 class SkillTest:
-    questions: List[Question] = []
+    questions: List[Question]
 
     def __init__(self):
+        self.questions = []
         with open('exam/questions.json', 'r') as q_json:
             for q in json.load(q_json):
                 new_q = Question(q.get("id"), q.get("question"), q.get("answers"), q.get("correct_index"))

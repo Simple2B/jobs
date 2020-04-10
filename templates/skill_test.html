@@ -2,6 +2,7 @@
 
 {%block content%}
 {# see https://bootstrap-4.ru/docs/4.0/components/forms/ #}
+<form id="exam_form" action="/skill_test" method="POST">
 <div class="form-group">
     {%for question in skill_test.questions %}
     <p>{{question.question}}</p>
@@ -9,22 +10,37 @@
     {% for answer in question.answers%}
     {% set ans_id = question.answers.index(answer) %}
     <div class="form-check">
-        <input class="form-check-input" type="radio" name="{{question.id}}" id="{{question.id}}.{{ans_id}}" value="{{question.id}}.{{ans_id}}">
+        <input class="form-check-input" type="radio" name="{{question.id}}" id="{{question.id}}.{{ans_id}}" value="{{ans_id}}">
         <label class="form-check-label" for="{{question.id}}.{{ans_id}}">{{answer}}</label>
     </div>
     {%endfor%}
 
     <p>-------------</p>
     {%endfor%}
-    <button type="button" id="submit_btn">submit answers</button>
+    <button type="submit" id="submit_btn" class="btn btn-primary">Submit</button>
 </div>
+</form>
 <script>
-    $("#submit_btn").click(function() {
+    $("#exam_form").submit( function(eventObj) {
+    //$("#submit_btn").click(function() {
+        var user_answers = "["
+
         $("input[type='radio']:checked").each(function() {
-            console.log(this.name);
-            console.log($(this).val());
+            user_answers = user_answers.concat("{\"", this.name, "\": \"", this.value, "\"}, "); //{"name": "val"},
+            //console.log($(this).val());
         });
-    });
+
+        user_answers = user_answers.slice(0, -2)
+        user_answers = user_answers.concat("]")
+
+        console.log(user_answers)
+
+        $("<input />").attr("type", "hidden")
+            .attr("name", "user_answers")
+            .attr("value", user_answers)
+            .appendTo("#exam_form");
+        return true;
+  });
 </script>
 
 {%endblock%}

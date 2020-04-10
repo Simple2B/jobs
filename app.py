@@ -62,6 +62,7 @@ def login():
 def signup():
     form = SignupForm()
     if form.validate_on_submit():
+        user = None  # for return
         with db_session_ctx() as db:
             user = db.query(User).filter(User.name == form.name).first()
             if user:
@@ -69,8 +70,11 @@ def signup():
             else:
                 new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.USER)
                 db.add(new_user)
-                new_user.send_confirmation_email(mail)
-                return "user {} created".format(new_user.name)
+        with db_session_ctx() as db:
+            user = db.query(User).filter(User.name == form.name).first()
+            user.generate_email_confirmation_token()
+            user.send_confirmation_email(mail)
+            return "user {} created".format(user.name)
 
     else:
         return render_template("landing.html", form=form, role=session['role'])
@@ -103,8 +107,9 @@ def resend():
         user_id = session['user_id']
         with db_session_ctx() as dsession:
             user: User = dsession.query(User).filter(User.id == user_id).first()
-            user.send_confirmation_email(mail)
-            return "check your mail"
+            user.generate_email_confirmation_token()
+        user.send_confirmation_email(mail)
+        return "check your mail"
 
 
 @app.route("/admin", methods=['GET'])
@@ -129,5 +134,15 @@ def logout():
 
 @app.route('/skill_test', methods=['GET'])
 def skill_test_get():
+    if not is_user_logged_in():
+        return redirect("/", 403)
     skt = SkillTest()
     return render_template("skill_test.html", skill_test=skt)
+
+
+@app.route('/skill_test', methods=['POST'])
+def skill_test_post():
+    if not is_user_logged_in():
+        return redirect("/", 403)
+
+    return "thank you!"

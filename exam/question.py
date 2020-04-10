@@ -12,3 +12,12 @@ class Question:
         self.question = question
         self.answers = answers
         self.correct_index = correct_index
+
+    def as_dict(self):
+        res = {
+            "id": self.id,
+            "question": self.question,
+            "answers": self.answers,
+            "correct_index": self.correct_index
+        }
+        return res

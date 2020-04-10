@@ -27,6 +27,7 @@ class User(ModelBase):
     is_active = Column(Boolean)
     is_email_confirmed = Column(Boolean)
     email_confirmation_token = Column(String)
+    test_results = Column(String)
 
     def __init__(self, name, email, passwd, role: UserRoleEnum):
         self.name = name
@@ -35,10 +36,13 @@ class User(ModelBase):
         self.role = role.value
         self.is_active = True
         self.is_email_confirmed = False
+        self.test_results = None
 
-    def send_confirmation_email(self, mail: Mail):
+    def generate_email_confirmation_token(self):
         self.email_confirmation_token = token_hex(32)
         print("debug: email_confirmation_token = ", self.email_confirmation_token)
+
+    def send_confirmation_email(self, mail: Mail):
         host = "localhost:5000"  # TODO: global variable
         subject = 'Confirm registration on simple2b.com'
         recipients = [self.email]

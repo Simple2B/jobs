@@ -62,16 +62,16 @@ class User(ModelBase):
             "password": self.password,
             "role": self.role,
             "is_active": self.is_active,
-            "is_email_confirmed": self.is_email_confirmed,
-            "email_confirmation_token": self.email_confirmation_token
+            "email_conf": self.is_email_confirmed,
+            "test_results": self.test_results
         }
 
     def __repr__(self):
         results = ""
         try:
             results = json.loads(self.test_results)
-        except:
-            pass
+        except TypeError as jerr:
+            print(jerr)  # TODO log
         print_template = """id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}
 \tis_email_confirmed: {}\temail_confirmation_token: {}\ttest_results: {}"""
         return print_template.format(self.id, self.name, self.email, self.role,

@@ -147,5 +147,14 @@ def skill_test_post():
         return redirect("/", 403)
     exam_form = ExamForm()
     user_answers = exam_form.user_answers.data
-    print(json.loads(user_answers))
+    print(user_answers)
+    user_answers_json = json.loads(user_answers)
+    user_answers_array = []
+    for a_dict in user_answers_json:
+        user_answers_array.append(user_answers_json[a_dict])
+    print(user_answers_array)
+
+    with db_session_ctx() as db:
+        user = db.query(User).filter(User.id == session['user_id']).first()
+        user.test_results = json.dumps(SkillTest().as_list_with_answers(user_answers_array))
     return "thank you!"

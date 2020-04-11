@@ -5,6 +5,7 @@ from session import db_engine
 from enum import Enum
 from secrets import token_hex
 from flask_mail import Mail, Message
+import json
 
 ModelBase = declarative_base(bind=db_engine)
 
@@ -66,10 +67,15 @@ class User(ModelBase):
         }
 
     def __repr__(self):
+        results = ""
+        try:
+            results = json.loads(self.test_results)
+        except:
+            pass
         print_template = """id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}
-\tis_email_confirmed: {}\temail_confirmation_token: {}"""
+\tis_email_confirmed: {}\temail_confirmation_token: {}\ttest_results: {}"""
         return print_template.format(self.id, self.name, self.email, self.role,
-                                     self.is_active, self.is_email_confirmed, self.email_confirmation_token)
+                                     self.is_active, self.is_email_confirmed, self.email_confirmation_token, results)
 
 # в sqlite по умолчанию отключены foreign keys (https://www.sqlite.org/foreignkeys.html пункт 2)
 # включать их - много мороки, а пользы мало: только возможность прои создании пользователя убедиться, что такая роль существует

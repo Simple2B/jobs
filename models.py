@@ -28,6 +28,7 @@ class User(ModelBase):
     is_active = Column(Boolean)
     is_email_confirmed = Column(Boolean)
     email_confirmation_token = Column(String)
+    is_test_completed = Column(Boolean)
     test_results = Column(String)
 
     def __init__(self, name, email, passwd, role: UserRoleEnum):
@@ -37,6 +38,7 @@ class User(ModelBase):
         self.role = role.value
         self.is_active = True
         self.is_email_confirmed = False
+        self.is_test_completed = False
         self.test_results = None
 
     def generate_email_confirmation_token(self):
@@ -44,11 +46,12 @@ class User(ModelBase):
         print("debug: email_confirmation_token = ", self.email_confirmation_token)
 
     def send_confirmation_email(self, mail: Mail):
-        host = "localhost:5000"  # TODO: global variable
-        subject = 'Confirm registration on simple2b.com'
+        email_settings = json.load(open("config.json"))["confirmation_email"]
+        host = email_settings["HOST"]
+        subject = email_settings["SUBJECT"]
         recipients = [self.email]
-        sender = 'info@simple2b.com'
-        msg_template = "<p>confirmation link: http://{host}/confirm_email?token={token}</p>"
+        sender = email_settings["SENDER"]
+        msg_template = email_settings["MSG_TEMPLATE"]
         html = msg_template.format(host=host, token=self.email_confirmation_token)
         confirm_msg = Message(subject=subject, recipients=recipients, sender=sender, html=html)
         mail.send(confirm_msg)
@@ -67,15 +70,14 @@ class User(ModelBase):
         }
 
     def __repr__(self):
-        results = ""
-        try:
+        if self.is_test_completed:
             results = json.loads(self.test_results)
-        except TypeError as jerr:
-            print(jerr)  # TODO log
+        else:
+            results = ""
         print_template = """id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}
-\tis_email_confirmed: {}\temail_confirmation_token: {}\ttest_results: {}"""
-        return print_template.format(self.id, self.name, self.email, self.role,
-                                     self.is_active, self.is_email_confirmed, self.email_confirmation_token, results)
+\tis_email_confirmed: {}\temail_confirmation_token: {}\tis_test_completed: {}\ttest_results: {}"""
+        return print_template.format(self.id, self.name, self.email, self.role, self.is_active, self.is_email_confirmed,
+                                     self.email_confirmation_token, self.is_test_completed, results)
 
 # в sqlite по умолчанию отключены foreign keys (https://www.sqlite.org/foreignkeys.html пункт 2)
 # включать их - много мороки, а пользы мало: только возможность прои создании пользователя убедиться, что такая роль существует

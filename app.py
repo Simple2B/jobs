@@ -39,9 +39,10 @@ def home():
     if not user.is_email_confirmed:
         return render_template("confirm_email.html", user=user)
     if user.role == UserRoleEnum.ADMIN.value:
-        return redirect("/admin", 302)
-    # TODO if user.is_test_passed: redirect("/thankyou")
-    return render_template("test_invitation.html", username=user.name)
+        return admin_console()
+    if not user.is_test_completed:
+        return render_template("test_invitation.html", username=user.name)
+    return "Thank you! Test completed."
 
 
 @app.route("/login", methods=['POST'])
@@ -108,6 +109,8 @@ def resend():
         user_id = session['user_id']
         with db_session_ctx() as dsession:
             user: User = dsession.query(User).filter(User.id == user_id).first()
+            if user.is_email_confirmed:
+                return "email already confirmed"
             user.generate_email_confirmation_token()
         user.send_confirmation_email(mail)
         return "check your mail"
@@ -157,4 +160,5 @@ def skill_test_post():
     with db_session_ctx() as db:
         user = db.query(User).filter(User.id == session['user_id']).first()
         user.test_results = json.dumps(SkillTest().as_list_with_answers(user_answers_array))
+        user.is_test_completed = True
     return "thank you!"

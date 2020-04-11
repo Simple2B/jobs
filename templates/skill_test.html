@@ -26,14 +26,12 @@
         var user_answers = "{"
 
         $("input[type='radio']:checked").each(function() {
-            user_answers = user_answers.concat("\"", this.name, "\": \"", this.value, "\", "); //{"name": "val"},
+            user_answers = user_answers.concat("\"", this.name, "\": \"", this.value, "\", "); //"name": "val",
             //console.log($(this).val());
         });
 
         user_answers = user_answers.slice(0, -2)
         user_answers = user_answers.concat("}")
-
-        console.log(user_answers)
 
         $("<input />").attr("type", "hidden")
             .attr("name", "user_answers")

@@ -1,5 +1,6 @@
 {%extends 'base.html'%}
 {%block content%}
+    <form action="/admin" method="POST" id="admin_action_form">
         <table id="example" class="display" style="width:100%">
             <thead>
 
@@ -15,7 +16,7 @@
                 {% for user  in users %}
 
                 <tr>
-                    <td><input type="checkbox" id="{{user.id}}"></td>
+                    <td><input type="checkbox" name="{{user.id}}" id="{{user.id}}"></td>
                     {% for value in user.to_dict().values() %}
                     <td>{{value}}</td>
                     {%endfor%}
@@ -23,8 +24,13 @@
                 {%endfor%}
             </tbody>
         </table>
-        </div>
 
+
+        <button class="button button-primary" type="submit" name="admin_action" value="ban">Ban</button>
+        <button class="button button-primary" type="submit" name="admin_action" value="unban">Unban</button>
+        <button class="button button-primary" type="submit" name="admin_action" value="make_admin">Set admin role</button>
+        <button class="button button-primary" type="submit" name="admin_action" value="make_user">Set user role</button>
+    </form>
         <script>
             $(document).ready(function() {
                 $('#example').DataTable( {
@@ -32,5 +38,23 @@
                     "order": [[ 3, "desc" ]]
                 } );
             } );
+
+            $("#admin_action_form").submit( function(eventObj) {
+                var selected_users = "["
+
+                $("input[type='checkbox']:checked").each(function() {
+                    selected_users = selected_users.concat(this.name, ", "); //"name",
+                //console.log($(this).val());
+                });
+
+                selected_users = selected_users.slice(0, -2)
+                selected_users = selected_users.concat("]")
+
+                $("<input />").attr("type", "hidden")
+                    .attr("name", "selected_users")
+                    .attr("value", selected_users)
+                    .appendTo("#admin_action_form");
+                return true;
+            });
         </script>
 {%endblock%}

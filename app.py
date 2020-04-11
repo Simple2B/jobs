@@ -116,17 +116,36 @@ def resend():
         return "check your mail"
 
 
-@app.route("/admin", methods=['GET'])
+@app.route("/admin", methods=['GET', 'POST'])
 def admin_console():
     if 'user_id' not in session:
         return redirect("/", 403)
-    user_id = session['user_id']
-    with db_session_ctx(read_only=True) as dbses:
-        user = dbses.query(User).filter(User.id == user_id).first()
-        if user.role != UserRoleEnum.ADMIN.value:
+    admin_id = session['user_id']
+    with db_session_ctx() as db:
+        admin = db.query(User).filter(User.id == admin_id).first()
+        if admin.role != UserRoleEnum.ADMIN.value:
             return redirect("/", 403)
         else:
-            return render_template("admin_console.html", users=dbses.query(User).all())
+            if request.method == 'GET':
+                return render_template("admin_console.html", users=db.query(User).all())
+            if request.method == 'POST':
+                print(request.form['admin_action'])
+                print(request.form['selected_users'])
+                for user_id in json.loads(request.form['selected_users']):
+                    user = db.query(User).filter(User.id == user_id).first()
+                    if user is None:
+                        # TODO proper error display
+                        return "error: no user with id {}".format(user_id)
+                    if request.form['admin_action'] == "ban":
+                        user.is_active = False
+                    if request.form['admin_action'] == "unban":
+                        user.is_active = True
+                    if request.form['admin_action'] == "make_admin":
+                        user.role = UserRoleEnum.ADMIN.value
+                    if request.form['admin_action'] == "make_user":
+                        user.role = UserRoleEnum.USER.value
+                return redirect("/", 302)
+                # admin console ban and make admin actions
 
 
 @app.route('/logout', methods=['POST'])

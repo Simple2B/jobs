@@ -81,7 +81,7 @@ def signup():
             user = db.query(User).filter(User.name == form.name).first()
             user.generate_email_confirmation_token()
             user.send_confirmation_email(mail)
-            return simple_message(messages.USER_CREATED.format(user.name))
+            return render_template("confirm_email.html", user=user)
 
     else:
         return render_template("landing.html", form=form, role=session['role'])
@@ -121,8 +121,8 @@ def resend():
             if user.is_email_confirmed:
                 return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
             user.generate_email_confirmation_token()
-        user.send_confirmation_email(mail)
-        return "check your mail"
+            user.send_confirmation_email(mail)
+        return simple_message(messages.NEW_EMAIL_CONFIRMATION_TOKEN_SENT)
 
 
 @app.route("/admin", methods=['GET', 'POST'])

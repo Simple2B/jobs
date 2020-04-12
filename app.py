@@ -1,4 +1,5 @@
 from flask import Flask, render_template, session, request, redirect
+import json
 from flask_mail import Mail
 from forms.login_form import LoginForm
 from forms.signup_form import SignupForm
@@ -7,7 +8,7 @@ from models import User, UserRoleEnum
 from exam.skilltest import SkillTest
 from session import db_session_ctx
 import secret_settings
-import json
+import messages
 
 
 app = Flask(__name__)
@@ -42,7 +43,7 @@ def home():
         return admin_console()
     if not user.is_test_completed:
         return render_template("test_invitation.html", username=user.name)
-    return "Thank you! Test completed."
+    return render_template("simple_message.html", message=messages.TEST_COMPLETED)
 
 
 @app.route("/login", methods=['POST'])

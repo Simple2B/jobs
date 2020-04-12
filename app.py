@@ -30,6 +30,10 @@ def fetch_user_by_id():
         return user
 
 
+def simple_message(message):
+    return render_template("simple_message.html", message=message)
+
+
 @app.route("/")
 def home():
     if not is_user_logged_in():
@@ -43,7 +47,7 @@ def home():
         return admin_console()
     if not user.is_test_completed:
         return render_template("test_invitation.html", username=user.name)
-    return render_template("simple_message.html", message=messages.TEST_COMPLETED)
+    return simple_message(messages.TEST_COMPLETED)
 
 
 @app.route("/login", methods=['POST'])
@@ -54,7 +58,7 @@ def login():
             user: User = db.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
                 session['user_id'] = user.id
-                return redirect("/", 200)
+                return redirect("/")
             else:
                 return "no such user"
     else:
@@ -77,7 +81,7 @@ def signup():
             user = db.query(User).filter(User.name == form.name).first()
             user.generate_email_confirmation_token()
             user.send_confirmation_email(mail)
-            return "user {} created".format(user.name)
+            return simple_message(messages.USER_CREATED.format(user.name))
 
     else:
         return render_template("landing.html", form=form, role=session['role'])
@@ -88,30 +92,34 @@ def confirm():
     token = request.args.get('token')
     if token is None:
         if not is_user_logged_in():
-            return redirect("/", 403)
+            return redirect("/")
         else:
-            return render_template("confirm_email.html", user=fetch_user_by_id())
+            user = fetch_user_by_id()
+            if not user.is_email_confirmed:
+                return render_template("confirm_email.html", user=user)
+            else:
+                return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
     with db_session_ctx(read_only=False) as dsession:
         user = dsession.query(User).filter(User.email_confirmation_token == token).first()
         if user is None:
-            return "token expired or does not exist"
+            return simple_message(messages.NO_SUCH_EMAIL_CONFIRMATION_TOKEN)
         else:
             if user.is_email_confirmed:
-                return "email already confirmed"
+                return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
             user.is_email_confirmed = True
-            return "email successfully confirmed"
+            return simple_message(messages.EMAIL_CONFIRMED)
 
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
     if 'user_id' not in session:
-        return redirect("/", 302)
+        return redirect("/")
     else:
         user_id = session['user_id']
         with db_session_ctx() as dsession:
             user: User = dsession.query(User).filter(User.id == user_id).first()
             if user.is_email_confirmed:
-                return "email already confirmed"
+                return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
             user.generate_email_confirmation_token()
         user.send_confirmation_email(mail)
         return "check your mail"
@@ -120,12 +128,12 @@ def resend():
 @app.route("/admin", methods=['GET', 'POST'])
 def admin_console():
     if 'user_id' not in session:
-        return redirect("/", 403)
+        return redirect("/")
     admin_id = session['user_id']
     with db_session_ctx() as db:
         admin = db.query(User).filter(User.id == admin_id).first()
         if admin.role != UserRoleEnum.ADMIN.value:
-            return redirect("/", 403)
+            return redirect("/")
         else:
             if request.method == 'GET':
                 return render_template("admin_console.html", users=db.query(User).all())
@@ -159,7 +167,7 @@ def logout():
 @app.route('/skill_test', methods=['GET'])
 def skill_test_get():
     if not is_user_logged_in():
-        return redirect("/", 403)
+        return redirect("/")
     skt = SkillTest()
     return render_template("skill_test.html", skill_test=skt)
 
@@ -167,7 +175,9 @@ def skill_test_get():
 @app.route('/skill_test', methods=['POST'])
 def skill_test_post():
     if not is_user_logged_in():
-        return redirect("/", 403)
+        return redirect("/")
+    if fetch_user_by_id().is_test_completed:
+        return simple_message(messages.REPEAT_TEST_SUBMIT)
     exam_form = ExamForm()
     user_answers = exam_form.user_answers.data
     print(user_answers)
@@ -175,10 +185,10 @@ def skill_test_post():
     user_answers_array = []
     for a_dict in user_answers_json:
         user_answers_array.append(user_answers_json[a_dict])
-    print(user_answers_array)
+    print("user answers: ", user_answers_array)
 
     with db_session_ctx() as db:
         user = db.query(User).filter(User.id == session['user_id']).first()
         user.test_results = json.dumps(SkillTest().as_list_with_answers(user_answers_array))
         user.is_test_completed = True
-    return "thank you!"
+    return simple_message(messages.TEST_COMPLETED)

@@ -11,9 +11,9 @@ ModelBase = declarative_base(bind=db_engine)
 
 
 class UserRoleEnum(Enum):
-    ADMIN = 'admin'
-    USER = 'user'
-    GUEST = 'guest'
+    admin = 'admin'
+    user = 'user'
+    guest = 'guest'
 
 
 class User(ModelBase):
@@ -74,9 +74,11 @@ class User(ModelBase):
             results = json.loads(self.test_results)
         else:
             results = ""
-        print_template = """id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}
-\tis_email_confirmed: {}\temail_confirmation_token: {}\tis_test_completed: {}\ttest_results: {}"""
-        return print_template.format(self.id, self.name, self.email, self.role, self.is_active, self.is_email_confirmed,
+        print_template = """id: {}\tname: {}\tpassword: {}\temail: {}\trole: {}\tis_active: {}
+            is_email_confirmed: {}\temail_confirmation_token: {}\tis_test_completed: {}\ttest_results:\n\t{}
+            ------------------------"""
+        return print_template.format(self.id, self.name, self.password, self.email, self.role,
+                                     self.is_active, self.is_email_confirmed,
                                      self.email_confirmation_token, self.is_test_completed, results)
 
 # в sqlite по умолчанию отключены foreign keys (https://www.sqlite.org/foreignkeys.html пункт 2)

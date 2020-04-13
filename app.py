@@ -38,11 +38,11 @@ def home():
         return "User is inactive"
     if not user.is_email_confirmed:
         return render_template("confirm_email.html", user=user)
-    if user.role == UserRoleEnum.ADMIN.value:
+    if user.role == UserRoleEnum.admin:
         return admin_console()
     if not user.is_test_completed:
         return render_template("test_invitation.html", username=user.name)
-    return "Thank you! Test completed."
+    return render_template("test_done.html", username=user.name)
 
 
 @app.route("/login", methods=['POST'])
@@ -70,7 +70,7 @@ def signup():
             if user:
                 return "user {} already exists".format(form.name)
             else:
-                new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.USER)
+                new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.user)
                 db.add(new_user)
         with db_session_ctx() as db:
             user = db.query(User).filter(User.name == form.name).first()
@@ -123,7 +123,7 @@ def admin_console():
     admin_id = session['user_id']
     with db_session_ctx() as db:
         admin = db.query(User).filter(User.id == admin_id).first()
-        if admin.role != UserRoleEnum.ADMIN.value:
+        if admin.role != UserRoleEnum.admin:
             return redirect("/", 403)
         else:
             if request.method == 'GET':
@@ -141,9 +141,9 @@ def admin_console():
                     if request.form['admin_action'] == "unban":
                         user.is_active = True
                     if request.form['admin_action'] == "make_admin":
-                        user.role = UserRoleEnum.ADMIN.value
+                        user.role = UserRoleEnum.admin
                     if request.form['admin_action'] == "make_user":
-                        user.role = UserRoleEnum.USER.value
+                        user.role = UserRoleEnum.user
                 return redirect("/", 302)
                 # admin console ban and make admin actions
 

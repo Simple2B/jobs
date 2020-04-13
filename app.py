@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, request, redirect
+import flask
 import json
 from flask_mail import Mail
 from forms.login_form import LoginForm
@@ -11,7 +11,7 @@ import secret_settings
 import messages
 
 
-app = Flask(__name__)
+app = flask.Flask(__name__)
 app.secret_key = secret_settings.app_secret_key
 
 config = json.load(open("config.json"))
@@ -21,52 +21,59 @@ mail = Mail(app)
 
 
 def is_user_logged_in():
-    return 'user_id' in session
+    return 'user_id' in flask.session
 
 
 def fetch_user_by_id():
     with db_session_ctx(read_only=True) as db:
-        user: User = db.query(User).filter(User.id == session['user_id']).first()
+        user: User = db.query(User).filter(User.id == flask.session['user_id']).first()
         return user
 
 
 def simple_message(message):
-    return render_template("simple_message.html", message=message)
+    return flask.render_template("simple_message.html", message=message)
 
 
 @app.route("/")
 def home():
     if not is_user_logged_in():
-        return render_template("landing.html", form=LoginForm())
+        return flask.redirect("/login")
     user = fetch_user_by_id()
     if not user.is_active:
-        return "User is inactive"
+        return "User is banned"
     if not user.is_email_confirmed:
-        return render_template("confirm_email.html", user=user)
+        return flask.render_template("confirm_email.html", user=user)
     if user.role == UserRoleEnum.ADMIN.value:
         return admin_console()
     if not user.is_test_completed:
-        return render_template("test_invitation.html", username=user.name)
+        return flask.render_template("test_invitation.html", username=user.name)
     return simple_message(messages.TEST_COMPLETED)
 
 
-@app.route("/login", methods=['POST'])
+@app.route("/login", methods=['GET', 'POST'])
 def login():
+    if flask.request.method == 'GET':
+        return flask.render_template("login.html", form=LoginForm())
     form = LoginForm()
     if form.validate_on_submit():
         with db_session_ctx(read_only=True) as db:
             user: User = db.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
-                session['user_id'] = user.id
-                return redirect("/")
+                flask.session['user_id'] = user.id
+                return flask.redirect("/")
             else:
                 return "no such user"
     else:
         return "error in form"
 
 
+@app.route("/join", methods=['GET'])
+def signup_get():
+    return flask.render_template('join.html', form=SignupForm())
+
+
 @app.route("/signup", methods=['POST'])
-def signup():
+def signup_post():
     form = SignupForm()
     if form.validate_on_submit():
         user = None  # for return
@@ -81,22 +88,21 @@ def signup():
             user = db.query(User).filter(User.name == form.name).first()
             user.generate_email_confirmation_token()
             user.send_confirmation_email(mail)
-            return render_template("confirm_email.html", user=user)
-
+            return flask.render_template("confirm_email.html", user=user)
     else:
-        return render_template("landing.html", form=form, role=session['role'])
+        return flask.render_template("join.html", form=form)
 
 
 @app.route("/confirm_email", methods=['GET'])
 def confirm():
-    token = request.args.get('token')
+    token = flask.request.args.get('token')
     if token is None:
         if not is_user_logged_in():
-            return redirect("/")
+            return flask.redirect("/")
         else:
             user = fetch_user_by_id()
             if not user.is_email_confirmed:
-                return render_template("confirm_email.html", user=user)
+                return flask.render_template("confirm_email.html", user=user)
             else:
                 return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
     with db_session_ctx(read_only=False) as dsession:
@@ -112,10 +118,10 @@ def confirm():
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
-    if 'user_id' not in session:
-        return redirect("/")
+    if 'user_id' not in flask.session:
+        return flask.redirect("/")
     else:
-        user_id = session['user_id']
+        user_id = flask.session['user_id']
         with db_session_ctx() as dsession:
             user: User = dsession.query(User).filter(User.id == user_id).first()
             if user.is_email_confirmed:
@@ -127,55 +133,55 @@ def resend():
 
 @app.route("/admin", methods=['GET', 'POST'])
 def admin_console():
-    if 'user_id' not in session:
-        return redirect("/")
-    admin_id = session['user_id']
+    if 'user_id' not in flask.session:
+        return flask.redirect("/")
+    admin_id = flask.session['user_id']
     with db_session_ctx() as db:
         admin = db.query(User).filter(User.id == admin_id).first()
         if admin.role != UserRoleEnum.ADMIN.value:
-            return redirect("/")
+            return flask.redirect("/")
         else:
-            if request.method == 'GET':
-                return render_template("admin_console.html", users=db.query(User).all())
-            if request.method == 'POST':
-                print(request.form['admin_action'])
-                print(request.form['selected_users'])
-                for user_id in json.loads(request.form['selected_users']):
+            if flask.request.method == 'GET':
+                return flask.render_template("admin_console.html", users=db.query(User).all())
+            if flask.request.method == 'POST':
+                print(flask.request.form['admin_action'])
+                print(flask.request.form['selected_users'])
+                for user_id in json.loads(flask.request.form['selected_users']):
                     user = db.query(User).filter(User.id == user_id).first()
                     if user is None:
                         # TODO proper error display
                         return "error: no user with id {}".format(user_id)
-                    if request.form['admin_action'] == "ban":
+                    if flask.request.form['admin_action'] == "ban":
                         user.is_active = False
-                    if request.form['admin_action'] == "unban":
+                    if flask.request.form['admin_action'] == "unban":
                         user.is_active = True
-                    if request.form['admin_action'] == "make_admin":
+                    if flask.request.form['admin_action'] == "make_admin":
                         user.role = UserRoleEnum.ADMIN.value
-                    if request.form['admin_action'] == "make_user":
+                    if flask.request.form['admin_action'] == "make_user":
                         user.role = UserRoleEnum.USER.value
-                return redirect("/", 302)
+                return flask.redirect("/", 302)
                 # admin console ban and make admin actions
 
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    if 'user_id' in session:
-        session.pop('user_id')
-    return render_template("landing.html", form=LoginForm())
+    if 'user_id' in flask.session:
+        flask.session.pop('user_id')
+    return flask.redirect("/")
 
 
 @app.route('/skill_test', methods=['GET'])
 def skill_test_get():
     if not is_user_logged_in():
-        return redirect("/")
+        return flask.redirect("/")
     skt = SkillTest()
-    return render_template("skill_test.html", skill_test=skt)
+    return flask.render_template("skill_test.html", skill_test=skt)
 
 
 @app.route('/skill_test', methods=['POST'])
 def skill_test_post():
     if not is_user_logged_in():
-        return redirect("/")
+        return flask.redirect("/")
     if fetch_user_by_id().is_test_completed:
         return simple_message(messages.REPEAT_TEST_SUBMIT)
     exam_form = ExamForm()
@@ -188,7 +194,7 @@ def skill_test_post():
     print("user answers: ", user_answers_array)
 
     with db_session_ctx() as db:
-        user = db.query(User).filter(User.id == session['user_id']).first()
+        user = db.query(User).filter(User.id == flask.session['user_id']).first()
         user.test_results = json.dumps(SkillTest().as_list_with_answers(user_answers_array))
         user.is_test_completed = True
     return simple_message(messages.TEST_COMPLETED)

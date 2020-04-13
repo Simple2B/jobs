@@ -9,6 +9,7 @@ from exam.skilltest import SkillTest
 from session import db_session_ctx
 import secret_settings
 import messages
+from logger import log
 
 
 app = flask.Flask(__name__)
@@ -60,10 +61,13 @@ def login():
             user: User = db.query(User).filter(User.name == form.name).first()
             if user and user.password == form.passwd:
                 flask.session['user_id'] = user.id
+                log(log.INFO, "User {username} (id: {id}) logged in".format(username=user.name, id=user.id))
                 return flask.redirect("/")
             else:
+                log(log.INFO, "Failed login attempt for user {username} (id: {id})".format(username=user.name, id=user.id))
                 return "no such user"
     else:
+        log(log.INFO, "Invalid login form submit")
         return "error in form"
 
 
@@ -72,6 +76,7 @@ def signup_get():
     return flask.render_template('join.html', form=SignupForm())
 
 
+# TODO: log
 @app.route("/signup", methods=['POST'])
 def signup_post():
     form = SignupForm()
@@ -92,7 +97,7 @@ def signup_post():
     else:
         return flask.render_template("join.html", form=form)
 
-
+# TODO: log
 @app.route("/confirm_email", methods=['GET'])
 def confirm():
     token = flask.request.args.get('token')
@@ -118,14 +123,18 @@ def confirm():
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
-    if 'user_id' not in flask.session:
+    if not is_user_logged_in():
+        log(log.WARNING, "severe: Guest tried to post resend confirmation email request")
         return flask.redirect("/")
     else:
         user_id = flask.session['user_id']
         with db_session_ctx() as dsession:
             user: User = dsession.query(User).filter(User.id == user_id).first()
             if user.is_email_confirmed:
+                log(log.WARNING, "User {} (id: {}) with already confirmed email requested token re-generation"
+                    .format(user.name, user.id))
                 return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
+            log(log.INFO, "User {} (id: {}) requested email confirmation token re-generation".format(user.name, user.id))
             user.generate_email_confirmation_token()
             user.send_confirmation_email(mail)
         return simple_message(messages.NEW_EMAIL_CONFIRMATION_TOKEN_SENT)
@@ -133,19 +142,20 @@ def resend():
 
 @app.route("/admin", methods=['GET', 'POST'])
 def admin_console():
-    if 'user_id' not in flask.session:
+    if not is_user_logged_in():
         return flask.redirect("/")
     admin_id = flask.session['user_id']
     with db_session_ctx() as db:
-        admin = db.query(User).filter(User.id == admin_id).first()
+        admin: User = db.query(User).filter(User.id == admin_id).first()
         if admin.role != UserRoleEnum.ADMIN.value:
+            log(log.WARNING, "User {} (id: {}) illegally tried to access admin console", admin.name, admin.id)
             return flask.redirect("/")
         else:
             if flask.request.method == 'GET':
                 return flask.render_template("admin_console.html", users=db.query(User).all())
             if flask.request.method == 'POST':
-                print(flask.request.form['admin_action'])
-                print(flask.request.form['selected_users'])
+                log(log.INFO, "Admin {} (id: {}) requested action '{}' for user(s) {}"
+                    .format(admin.name, admin.id, flask.request.form['admin_action'], flask.request.form['selected_users']))
                 for user_id in json.loads(flask.request.form['selected_users']):
                     user = db.query(User).filter(User.id == user_id).first()
                     if user is None:
@@ -166,6 +176,8 @@ def admin_console():
 @app.route('/logout', methods=['POST'])
 def logout():
     if 'user_id' in flask.session:
+        id = flask.session['user_id']
+        log(log.INFO, "User {username} (id: {id}) logged out".format(username=fetch_user_by_id().name, id=id))
         flask.session.pop('user_id')
     return flask.redirect("/")
 
@@ -173,8 +185,10 @@ def logout():
 @app.route('/skill_test', methods=['GET'])
 def skill_test_get():
     if not is_user_logged_in():
+        log(log.WARNING, "Guest tried to access skill_test")
         return flask.redirect("/")
     skt = SkillTest()
+    log(log.INFO, "User {} (id: {}) started skill test".format(fetch_user_by_id().name, flask.session['user_id']))
     return flask.render_template("skill_test.html", skill_test=skt)
 
 
@@ -183,18 +197,18 @@ def skill_test_post():
     if not is_user_logged_in():
         return flask.redirect("/")
     if fetch_user_by_id().is_test_completed:
+        log(log.WARNING, "User (id: {}) tried to submit test results again".format(flask.session['user_id']))
         return simple_message(messages.REPEAT_TEST_SUBMIT)
     exam_form = ExamForm()
     user_answers = exam_form.user_answers.data
-    print(user_answers)
     user_answers_json = json.loads(user_answers)
     user_answers_array = []
     for a_dict in user_answers_json:
         user_answers_array.append(user_answers_json[a_dict])
-    print("user answers: ", user_answers_array)
 
     with db_session_ctx() as db:
         user = db.query(User).filter(User.id == flask.session['user_id']).first()
         user.test_results = json.dumps(SkillTest().as_list_with_answers(user_answers_array))
         user.is_test_completed = True
+    log(log.INFO, "User (id: {}) submited test results: {}".format(flask.session['user_id'], user_answers))
     return simple_message(messages.TEST_COMPLETED)

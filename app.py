@@ -84,7 +84,7 @@ def signup():
             return render_template("confirm_email.html", user=user)
 
     else:
-        return render_template("landing.html", form=form, role=session['role'])
+        return render_template("landing.html", form=form)
 
 
 @app.route("/confirm_email", methods=['GET'])

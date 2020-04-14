@@ -67,7 +67,7 @@ def login():
             else:
                 log(log.INFO, "Failed login attempt for user {} (id: {}) from addr {}"
                     .format(user.name, user.id, flask.request.remote_addr))
-                return "no such user"
+                return flask.render_template("simple_message.html", message=messages.NO_SUCH_USER)
     else:
         log(log.INFO, "Invalid login form submit from addr {}".format(flask.request.remote_addr))
         return "error in form"
@@ -79,6 +79,7 @@ def signup_get():
 
 
 @app.route("/signup", methods=['POST'])
+#  TODO HASH
 def signup_post():
     form = SignupForm()
     if form.validate_on_submit():

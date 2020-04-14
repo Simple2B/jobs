@@ -2,7 +2,7 @@ from invoke import task  # noqa
 from models import ModelBase, User, UserRoleEnum  # , UserRole
 from session import db_session_ctx
 from secret_settings import admin_email, admin_name, admin_password
-
+# zip -P * config.zip config.json secret_settings.py
 
 @task
 def renew_db(_):

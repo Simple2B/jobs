@@ -38,7 +38,7 @@ def simple_message(message):
 @app.route("/")
 def home():
     if not is_user_logged_in():
-        log(log.INFO, "Guest connected from addr {}", flask.request.remote_addr)
+        log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
         return flask.redirect("/login")
     user = fetch_user_by_id()
     if not user.is_active:
@@ -212,7 +212,8 @@ def skill_test_post():
     user_answers_json = json.loads(user_answers)
     user_answers_array = []
     for a_dict in user_answers_json:
-        user_answers_array.append(user_answers_json[a_dict])
+        # user_answers_array.append(user_answers_json[a_dict])
+        user_answers_array += [user_answers_json[a_dict]]
 
     with db_session_ctx() as db:
         user = db.query(User).filter(User.id == flask.session['user_id']).first()

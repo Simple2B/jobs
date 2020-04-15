@@ -1,5 +1,39 @@
 {%extends 'base.html'%}
 {%block content%}
+
+
+<script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '240991697306228',
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v6.0'
+      });
+      FB.AppEvents.logPageView();
+    };
+
+    (function(d, s, id){
+       var js, fjs = d.getElementsByTagName(s)[0];
+       if (d.getElementById(id)) {return;}
+       js = d.createElement(s); js.id = id;
+       js.src = "https://connect.facebook.net/en_US/sdk.js";
+       fjs.parentNode.insertBefore(js, fjs);
+     }(document, 'script', 'facebook-jssdk'));
+
+    function statusChangeCallback(response) {
+        console.log(response)
+        console.log(response['status'])
+        console.log(response['authResponse'])
+    }
+
+    function checkLoginState() {
+        FB.getLoginStatus(function(response) {
+            statusChangeCallback(response);
+        });
+    }
+  </script>
+
 <div class="container">
 <div class="row justify-content-center">
     <div class="col-lg-4 card">
@@ -18,7 +52,12 @@
             <div>
                 <input type="submit" class="btn btn-outline-success btn-block mb-3"  value="Sign in">
             </div>
-            <div><p>Don't hasve account yet? <a href="/join">Join us!</a></p></div>
+            <div>
+                <fb:login-button  scope="public_profile,email" onlogin="checkLoginState();">
+                    <p>Sign in with facebook</p>
+                </fb:login-button>
+            </div>
+            <div><p>Don't have account yet? <a href="/join">Join us!</a></p></div>
         </form>
     </div>
     </div>

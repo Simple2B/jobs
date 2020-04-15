@@ -9,4 +9,18 @@
     "question": "Учиться хочешь?",
     "answers": ["Да", "Нет"],
     "correct_index": 0
+},
+{
+    "id": 2,
+    "question": "Пример длинного ответа",
+    "answers": ["Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean molestie lobortis tellus, sed vestibulum nulla consequat in. Aenean varius odio eros, sit amet finibus nunc euismod ut. Vivamus in nisi sed magna convallis facilisis. Pellentesque et arcu id tortor molestie rhoncus.",
+                "In eget sagittis augue, eu congue lectus. Morbi ligula mauris, luctus non auctor rutrum, vehicula vel dolor. Aliquam sit amet ligula eget leo accumsan egestas quis eget augue. Donec mi diam, convallis vel lorem non, faucibus sodales lectus. Aliquam erat volutpat. Maecenas pretium nulla eget tortor maximus eleifend.",
+                "Sed eu odio lacus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras hendrerit lorem eget dolor convallis, at semper tellus dapibus. Proin sed euismod ligula, vitae fringilla purus. Vestibulum bibendum tincidunt lacus sit amet egestas. Suspendisse potenti. Praesent at purus molestie nunc consequat suscipit."],
+    "correct_index": 0
+},
+{
+    "id": 3,
+    "question": "Пример длинного вопроса Пример длинного вопроса Пример длинного вопроса Пример длинного вопроса Пример длинного вопроса Пример длинного вопроса",
+    "answers": ["Почему бы и нет", "Почему бы и да"],
+    "correct_index": 0
 }]

@@ -46,6 +46,7 @@ class User(ModelBase):
         print("debug: email_confirmation_token = ", self.email_confirmation_token)
 
     def send_confirmation_email(self, mail: Mail):
+        # TODO if not flask.configuration['TESTING']:
         email_settings = json.load(open("config.json"))["confirmation_email"]
         host = email_settings["HOST"]
         subject = email_settings["SUBJECT"]

@@ -66,9 +66,10 @@ def login():
                 log(log.INFO, "User {username} (id: {id}) logged in".format(username=user.name, id=user.id))
                 return flask.redirect("/")
             else:
-                log(log.INFO, "Failed login attempt for user {} (id: {}) from addr {}"
-                    .format(user.name, user.id, flask.request.remote_addr))
+                log(log.INFO, "Failed login attempt with username {} from addr {}"
+                    .format(form.name, flask.request.remote_addr))
                 return flask.render_template("simple_message.html", message=messages.NO_SUCH_USER)
+                # TODO form error, warning
     else:
         log(log.INFO, "Invalid login form submit from addr {}".format(flask.request.remote_addr))
         return "error in form"
@@ -91,6 +92,7 @@ def signup_post():
                 log(log.INFO, "Attempt to create already existing user {} (id: {}) from addr {}"
                     .format(user.name, user.id, flask.request.remote_addr))
                 return "user {} already exists".format(form.name)
+                # TODO form error
             else:
                 new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.USER)
                 db.add(new_user)
@@ -222,3 +224,5 @@ def skill_test_post():
         user.is_test_completed = True
     log(log.INFO, "User (id: {}) submited test results: {}".format(flask.session['user_id'], user_answers))
     return simple_message(messages.TEST_COMPLETED)
+
+# TODO OpenID github, google, facebook

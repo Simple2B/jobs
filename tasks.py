@@ -1,6 +1,6 @@
 import os
 from invoke import task  # noqa
-from models import ModelBase, User, UserRoleEnum  # , UserRole
+from models import ModelBase, User, UserRole  # , UserRole
 from session import db_session_ctx
 
 
@@ -14,9 +14,9 @@ def renew_db(_):
     ModelBase.metadata.create_all()
     with db_session_ctx(read_only=False) as dsession:
         # role_admin = UserRole('admin')
-        admin = User(name=admin_name, email=admin_email, passwd=admin_password, role=UserRoleEnum.admin)
+        admin = User(name=admin_name, email=admin_email, passwd=admin_password, role=UserRole.admin)
         admin.is_email_confirmed = True
-        test_user = User(name='ton_user', email='an.malyshko@gmail.com', passwd='123', role=UserRoleEnum.user)
+        test_user = User(name='ton_user', email='an.malyshko@gmail.com', passwd='123', role=UserRole.user)
         test_user.is_email_confirmed = True
         # session.add(role_admin)
         dsession.add(admin)

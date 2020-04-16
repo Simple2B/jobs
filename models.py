@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean  # , ForeignKey
+import enum
+from sqlalchemy import Column, Integer, String, Boolean, Enum  # , ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy.orm import relationship
 from session import db_engine
-from enum import Enum
 from secrets import token_hex
 from flask_mail import Mail, Message
 import json
@@ -10,7 +10,7 @@ import json
 ModelBase = declarative_base(bind=db_engine)
 
 
-class UserRoleEnum(Enum):
+class UserRole(enum.Enum):
     admin = 'admin'
     user = 'user'
     guest = 'guest'
@@ -23,7 +23,7 @@ class User(ModelBase):
     name = Column(String)
     email = Column(String)
     password = Column(String)
-    role = Column(String)  # , ForeignKey('user_role.name'))
+    role = Column(Enum(UserRole))  # , ForeignKey('user_role.name'))
     # user_role = relationship("UserRole")
     is_active = Column(Boolean)
     is_email_confirmed = Column(Boolean)
@@ -31,7 +31,7 @@ class User(ModelBase):
     is_test_completed = Column(Boolean)
     test_results = Column(String)
 
-    def __init__(self, name, email, passwd, role: UserRoleEnum):
+    def __init__(self, name, email, passwd, role: UserRole):
         self.name = name
         self.email = email
         self.password = passwd

@@ -4,7 +4,7 @@ from flask_mail import Mail
 from forms.login_form import LoginForm
 from forms.signup_form import SignupForm
 from forms.exam_form import ExamForm
-from models import User, UserRoleEnum
+from models import User, UserRole
 from exam.skilltest import SkillTest
 from session import db_session_ctx
 import secret_settings
@@ -46,7 +46,7 @@ def home():
         return "User is banned"
     if not user.is_email_confirmed:
         return flask.render_template("confirm_email.html", user=user)
-    if user.role == UserRoleEnum.ADMIN.value:
+    if user.role == UserRole.admin:
         return admin_console()
     if not user.is_test_completed:
         return flask.render_template("test_invitation.html", username=user.name)
@@ -66,8 +66,8 @@ def login():
                 log(log.INFO, "User {username} (id: {id}) logged in".format(username=user.name, id=user.id))
                 return flask.redirect("/")
             else:
-                log(log.INFO, "Failed login attempt for user {} (id: {}) from addr {}"
-                    .format(user.name, user.id, flask.request.remote_addr))
+                log(log.ERROR, "Failed login attempt for user {} (id: {}) from addr {}"
+                    .format(form.name, user.id if user else None, flask.request.remote_addr))
                 return flask.render_template("simple_message.html", message=messages.NO_SUCH_USER)
     else:
         log(log.INFO, "Invalid login form submit from addr {}".format(flask.request.remote_addr))
@@ -92,7 +92,7 @@ def signup_post():
                     .format(user.name, user.id, flask.request.remote_addr))
                 return "user {} already exists".format(form.name)
             else:
-                new_user = User(form.name, form.e_mail, form.passwd, UserRoleEnum.user)
+                new_user = User(form.name, form.e_mail, form.passwd, UserRole.user)
                 db.add(new_user)
                 log(log.INFO, "User created: {}".format(new_user))
         with db_session_ctx() as db:
@@ -156,7 +156,7 @@ def admin_console():
     admin_id = flask.session['user_id']
     with db_session_ctx() as db:
         admin: User = db.query(User).filter(User.id == admin_id).first()
-        if admin.role != UserRoleEnum.ADMIN.value:
+        if admin.role != UserRole.admin:
             log(log.WARNING, "User {} (id: {}) illegally tried to access admin console", admin.name, admin.id)
             return flask.redirect("/")
         else:
@@ -175,9 +175,9 @@ def admin_console():
                     if flask.request.form['admin_action'] == "unban":
                         user.is_active = True
                     if flask.request.form['admin_action'] == "make_admin":
-                        user.role = UserRoleEnum.ADMIN.value
+                        user.role = UserRole.ADMIN.value
                     if flask.request.form['admin_action'] == "make_user":
-                        user.role = UserRoleEnum.USER.value
+                        user.role = UserRole.USER.value
                 return flask.redirect("/", 302)
                 # admin console ban and make admin actions
 
@@ -187,7 +187,10 @@ def logout():
     if 'user_id' in flask.session:
         id = flask.session['user_id']
         log(log.INFO, "User {username} (id: {id}) logged out".format(username=fetch_user_by_id().name, id=id))
-        flask.session.pop('user_id')
+        if 'user_id' in flask.session:
+            del flask.session['user_id']
+        if 'need_back' in flask.session:
+            del flask.session['need_back']
     return flask.redirect("/")
 
 

@@ -13,7 +13,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Flask",
+            "name": "server",
             "type": "python",
             "request": "launch",
             "module": "flask",

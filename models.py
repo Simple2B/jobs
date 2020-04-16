@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean  # , ForeignKey
+import enum
+from sqlalchemy import Column, Integer, String, Boolean, Enum  # , ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy.orm import relationship
 from session import db_engine
-from enum import Enum
 from secrets import token_hex
 from flask_mail import Mail, Message
 import json
@@ -10,10 +10,10 @@ import json
 ModelBase = declarative_base(bind=db_engine)
 
 
-class UserRoleEnum(Enum):
-    ADMIN = 'admin'
-    USER = 'user'
-    GUEST = 'guest'
+class UserRole(enum.Enum):
+    admin = 'admin'
+    user = 'user'
+    guest = 'guest'
 
 
 class User(ModelBase):
@@ -23,7 +23,7 @@ class User(ModelBase):
     name = Column(String)
     email = Column(String)
     password = Column(String)
-    role = Column(String)  # , ForeignKey('user_role.name'))
+    role = Column(Enum(UserRole))  # , ForeignKey('user_role.name'))
     # user_role = relationship("UserRole")
     is_active = Column(Boolean)
     is_email_confirmed = Column(Boolean)
@@ -31,7 +31,7 @@ class User(ModelBase):
     is_test_completed = Column(Boolean)
     test_results = Column(String)
 
-    def __init__(self, name, email, passwd, role: UserRoleEnum):
+    def __init__(self, name, email, passwd, role: UserRole):
         self.name = name
         self.email = email
         self.password = passwd
@@ -76,9 +76,11 @@ class User(ModelBase):
             results = json.loads(self.test_results)
         else:
             results = ""
-        print_template = """id: {}\tname: {}\temail: {}\trole: {}\tis_active: {}
-\tis_email_confirmed: {}\temail_confirmation_token: {}\tis_test_completed: {}\ttest_results: {}"""
-        return print_template.format(self.id, self.name, self.email, self.role, self.is_active, self.is_email_confirmed,
+        print_template = """id: {}\tname: {}\tpassword: {}\temail: {}\trole: {}\tis_active: {}
+            is_email_confirmed: {}\temail_confirmation_token: {}\tis_test_completed: {}\ttest_results:\n\t{}
+            ------------------------"""
+        return print_template.format(self.id, self.name, self.password, self.email, self.role,
+                                     self.is_active, self.is_email_confirmed,
                                      self.email_confirmation_token, self.is_test_completed, results)
 
 # в sqlite по умолчанию отключены foreign keys (https://www.sqlite.org/foreignkeys.html пункт 2)

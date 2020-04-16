@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple2b</title>
+    <title>Simple2b jobs</title>
     <!-- jquery -->
     <script src="https://code.jquery.com/jquery-3.4.1.js"
         integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
@@ -25,11 +25,16 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-between">
-        <a class="navbar-brand" href="#">Simple2b</a>
+        <a class="navbar-brand" href="https://simple2b.github.io/"><img src="https://simple2b.github.io/img/logo.svg" alt="Simple2B" height="64px"></a>
         <form class="form-inline my-2 my-lg-0" action="/logout" method="POST">
             {%if session['user_id']%}
             <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
+            {%else%}
+                {%if session['need_back']%}
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Back</button>
+                {%endif%}
             {%endif%}
+
 
         </form>
     </nav>

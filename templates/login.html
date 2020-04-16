@@ -1,0 +1,27 @@
+{%extends 'base.html'%}
+{%block content%}
+<div class="container">
+<div class="row justify-content-center">
+    <div class="col-lg-4 card">
+    <div class="card-body">
+        <h4 class="card-title mt-3">Sign in to Simple2B</h4>
+        <form action="/login" method="post">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <p>User name</p>
+                <input type="text" class="form-control" name="username">
+            </div>
+            <div class="form-group">
+                <p>Password</p>
+                <input type="password" class="form-control"  name="password">
+            </div>
+            <div>
+                <input type="submit" class="btn btn-outline-success btn-block mb-3"  value="Sign in">
+            </div>
+            <div><p>Don't hasve account yet? <a href="/join">Join us!</a></p></div>
+        </form>
+    </div>
+    </div>
+</div>
+</div>
+{%endblock%}

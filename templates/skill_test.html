@@ -4,18 +4,20 @@
 {# see https://bootstrap-4.ru/docs/4.0/components/forms/ #}
 <form id="exam_form" action="/skill_test" method="POST">
 <div class="form-group">
+    <!--<div class="card-deck">-->
     {%for question in skill_test.questions %}
-    <p>{{question.question}}</p>
-
-    {% for answer in question.answers%}
-    {% set ans_id = question.answers.index(answer) %}
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="{{question.id}}" id="{{question.id}}.{{ans_id}}" value="{{ans_id}}">
-        <label class="form-check-label" for="{{question.id}}.{{ans_id}}">{{answer}}</label>
+    <div class="card mb-3">
+        <div class="card-header">{{question.question}}</div>
+        <div class="card-body">
+            {% for answer in question.answers%}
+            {% set ans_id = question.answers.index(answer) %}
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="{{question.id}}" id="{{question.id}}.{{ans_id}}" value="{{ans_id}}">
+                <label class="form-check-label" for="{{question.id}}.{{ans_id}}">{{answer}}</label>
+            </div>
+            {%endfor%}
+        </div>
     </div>
-    {%endfor%}
-
-    <p>-------------</p>
     {%endfor%}
     <button type="submit" id="submit_btn" class="btn btn-primary">Submit</button>
 </div>

@@ -67,6 +67,8 @@ class User(ModelBase):
             "is_active": self.is_active,
             "email_conf": self.is_email_confirmed,
             "test_results": self.test_results
+            # TODO для нормального отображения вопросов в админской консоли
+            # https://stackoverflow.com/questions/18337407/saving-utf-8-texts-in-json-dumps-as-utf8-not-as-u-escape-sequence
         }
 
     def __repr__(self):

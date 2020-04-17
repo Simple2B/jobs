@@ -70,6 +70,11 @@ class Test_URL(BasicTest):
         s_pwd.send_keys(self.TEST_PASSWORD)
         s_pwd.send_keys(Keys.RETURN)
 
+    def test_home_page(self):
+        dr = self.driver
+        dr.get("http://localhost:5000")
+        assert "Simple2b" in self.driver.title
+
     def test_join(self):
         """заполняем форму регистрации и проверяем, есть ли теперь пользователя в БД"""
         self.delete_test_user()

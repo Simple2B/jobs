@@ -14,10 +14,7 @@ class SkillTest:
                 self.questions.append(new_q)
 
     def as_list(self):
-        res = []
-        for q in self.questions:
-            res.append(q.as_dict())
-        return res
+        return [q.as_dict() for q in self.questions]
 
     def as_list_with_answers(self, user_answers: List[Any]):
         """ представим вопрос в виде dict-а, и допишем в него ответ пользователя.

@@ -38,7 +38,7 @@ def simple_message(message):
 @app.route("/")
 def home():
     if not is_user_logged_in():
-        # TODO flask.request.remote_addr returns 10.0.0.121, not actual adress
+        # FIXME flask.request.remote_addr returns 10.0.0.121, not actual adress
         log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
         return flask.redirect("/login")
     user = fetch_user_by_id()

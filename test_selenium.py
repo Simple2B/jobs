@@ -25,6 +25,7 @@ import messages
 
 with open('config.json', 'r') as file:
     conf = json.load(file)["selenium"]
+    BROWSER = conf["BROWSER"]
     HOST = conf["HOST"]
     TEST_USERNAME = conf["TEST_USERNAME"]
     TEST_PASSWORD = conf["TEST_PASSWORD"]
@@ -33,16 +34,28 @@ with open('config.json', 'r') as file:
 
 
 @pytest.fixture(scope="class")
-def driver_init(request):
+def driver_init_ff(request):
     options = Options()
     # If you are running Firefox on a system with no display, make sure you use headless mode.
     # https://stackoverflow.com/questions/52534658/webdriverexception-message-invalid-argument-cant-kill-an-exited-process-with
     options.headless = False  # TODO visualisation selenium option
-    ff_driver = webdriver.Firefox(options=options)
-    ff_driver.implicitly_wait(5)  # ждет 5 секунд, если элемент ещё не загружен
-    request.cls.driver = ff_driver
+    if BROWSER == "firefox":  # Для использования нужно установить geckodriver в /usr/bin
+        driver = webdriver.Firefox(options=options)
+    elif BROWSER == "chrome":  # chromedriver
+        driver = webdriver.Chrome()  # 'options=options' leads to error
+    else:
+        raise("only 'firefox' and 'chrome' supported")
+    driver.implicitly_wait(5)  # ждет 5 секунд, если элемент ещё не загружен
+    request.cls.driver = driver
     yield
-    ff_driver.close()
+    driver.close()
+
+
+def driver_init_chrome(request):
+    chrome_driver = webdriver.Chrome()  # Optional argument, if not specified will search path.
+    yield
+    # chrome_driver.quit()  # было в примере https://chromedriver.chromium.org/getting-started
+    chrome_driver.close()
 
 
 @pytest.fixture(scope="function")
@@ -73,7 +86,7 @@ def confirm_email():
         user.is_email_confirmed = True
 
 
-@pytest.mark.usefixtures("driver_init")
+@pytest.mark.usefixtures("driver_init_ff")
 @pytest.mark.usefixtures("clean")
 class BasicTest:
     pass
@@ -83,7 +96,7 @@ class Test_URL(BasicTest):
 
     def log_in(self, username=TEST_USERNAME, password=TEST_PASSWORD):
         dr = self.driver
-        dr.get("http://localhost:5000/login")
+        dr.get(HOST + "/login")
         s_uname = dr.find_element_by_name("username")
         s_uname.send_keys(username)
         s_pwd = dr.find_element_by_name("password")
@@ -183,3 +196,5 @@ class Test_URL(BasicTest):
         sleep(1)
         self.driver.find_element_by_id("logout_btn").click()
         WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.ID, "login_btn")))
+
+# TODO test confirm email with get request

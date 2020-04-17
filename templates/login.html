@@ -1,7 +1,6 @@
 {%extends 'base.html'%}
 {%block content%}
 
-
 <script>
     window.fbAsyncInit = function() {
       FB.init({
@@ -22,9 +21,15 @@
      }(document, 'script', 'facebook-jssdk'));
 
     function statusChangeCallback(response) {
-        console.log(response)
-        console.log(response['status'])
-        console.log(response['authResponse'])
+        //console.log(response)
+        //console.log(response['authResponse']['accessToken'])
+        if(response['status'] == "connected") {
+            $.get( "https://graph.facebook.com/"+ response['authResponse']['userID'] +"?fields=email&access_token="+ response['authResponse']['accessToken'],
+                function( user_info ) {
+                alert( "Data Loaded: " + user_info["email"] );
+            });
+        }
+
     }
 
     function checkLoginState() {
@@ -35,6 +40,7 @@
   </script>
 
 <div class="container">
+    <p id="fb_response"></p>
 <div class="row justify-content-center">
     <div class="col-lg-4 card">
     <div class="card-body">
@@ -64,3 +70,8 @@
 </div>
 </div>
 {%endblock%}
+
+<!--
+curl -i -X GET "https://graph.facebook.com/1014161028985304?fields=birthday,email,hometown&access_token=EAADbLkCDAnQBAO1ZBhM7VZBfigKT68CzsEmYjQ6Wykk6eTsCrkKC15OZBCmEc4Hmb3rMGZB4p9fkK15MPr0GxZCb0yH6zfL1JTcBdhYUuf5bbRd1i5z3DCFWdBJr9FGkXgiWbjq5SR6z7uOPCG7TZAZApdkF6VEBGxcpi2UztQW90jI75VuZAGsYZBlY4ZAyZAlnqlIxEp31M9aTwZDZD"
+
+-->

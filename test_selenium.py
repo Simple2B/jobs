@@ -21,6 +21,14 @@ import messages
 # join, guest, login, test, test done, admin login
 
 # TODO after each function clean, separate tests, tearup/down
+
+HOST = "http://localhost:5000"
+TEST_USERNAME = "ton_test_sign_in"
+TEST_PASSWORD = "test"
+TEST_EMAIL = "info.simple2b@gmail.com"
+SITE_TITLE = "Simple2b"
+
+
 @pytest.fixture(scope="class")
 def driver_init(request):
     options = Options()
@@ -34,35 +42,41 @@ def driver_init(request):
     ff_driver.close()
 
 
+@pytest.fixture(scope="function")
+def clean():
+    create_test_user()
+    yield
+    delete_test_user()
+
+
+def create_test_user(email_confirmed=False):
+    with db_session_ctx() as db:
+        if not db.query(User).filter(User.name == TEST_USERNAME).first():
+            user = User(TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, UserRole.user)
+            user.is_email_confirmed = email_confirmed
+            db.add(user)
+
+
+def delete_test_user():
+    with db_session_ctx() as db:
+        user: User = db.query(User).filter(User.name == TEST_USERNAME).first()
+        if user is not None:
+            db.delete(user)
+
+
+def confirm_email():
+    with db_session_ctx() as db:
+        user: User = db.query(User).filter(User.name == TEST_USERNAME).first()
+        user.is_email_confirmed = True
+
+
 @pytest.mark.usefixtures("driver_init")
+@pytest.mark.usefixtures("clean")
 class BasicTest:
     pass
 
 
 class Test_URL(BasicTest):
-    HOST = "http://localhost:5000"
-    TEST_USERNAME = "ton_test_sign_in"
-    TEST_PASSWORD = "test"
-    TEST_EMAIL = "info.simple2b@gmail.com"
-    SITE_TITLE = "Simple2b"
-
-    def create_test_user(self, email_confirmed=False):
-        with db_session_ctx() as db:
-            if not db.query(User).filter(User.name == self.TEST_USERNAME).first():
-                user = User(self.TEST_USERNAME, self.TEST_EMAIL, self.TEST_PASSWORD, UserRole.user)
-                user.is_email_confirmed = email_confirmed
-                db.add(user)
-
-    def delete_test_user(self):
-        with db_session_ctx() as db:
-            user: User = db.query(User).filter(User.name == self.TEST_USERNAME).first()
-            if user is not None:
-                db.delete(user)
-
-    def confirm_email(self):
-        with db_session_ctx() as db:
-            user: User = db.query(User).filter(User.name == self.TEST_USERNAME).first()
-            user.is_email_confirmed = True
 
     def log_in(self, username=TEST_USERNAME, password=TEST_PASSWORD):
         dr = self.driver
@@ -75,31 +89,31 @@ class Test_URL(BasicTest):
 
     def test_home_page(self):
         dr = self.driver
-        dr.get(self.HOST)
-        assert self.SITE_TITLE in self.driver.title
+        dr.get(HOST)
+        assert SITE_TITLE in self.driver.title
 
     def test_join(self):
         """заполняем форму регистрации и проверяем, есть ли теперь пользователя в БД"""
-        self.delete_test_user()
+        delete_test_user()
         dr = self.driver
-        dr.get(self.HOST + "/join")
+        dr.get(HOST + "/join")
 
         s_email = dr.find_element_by_name("email")
-        s_email.send_keys(self.TEST_EMAIL)
+        s_email.send_keys(TEST_EMAIL)
         s_uname = dr.find_element_by_name("username")
-        s_uname.send_keys(self.TEST_USERNAME)
+        s_uname.send_keys(TEST_USERNAME)
         s_pwd = dr.find_element_by_name("password")
-        s_pwd.send_keys(self.TEST_PASSWORD)
+        s_pwd.send_keys(TEST_PASSWORD)
         s_pwd.send_keys(Keys.RETURN)
         # sleep(3)
         WebDriverWait(dr, 5).until(EC.presence_of_element_located((By.ID, 'conf_msg')))
         assert "please confirm your e-mail address" in dr.page_source
 
         with db_session_ctx() as db:
-            user: User = db.query(User).filter(User.name == self.TEST_USERNAME).first()
+            user: User = db.query(User).filter(User.name == TEST_USERNAME).first()
             assert user is not None
-            assert user.password == self.TEST_PASSWORD
-            assert user.email == self.TEST_EMAIL
+            assert user.password == TEST_PASSWORD
+            assert user.email == TEST_EMAIL
             assert user.is_active
             assert not user.is_email_confirmed
             assert not user.is_test_completed
@@ -107,22 +121,18 @@ class Test_URL(BasicTest):
 
     def test_login(self):
         """заходим под тестовым пользователем и проверяем, что ему нужно подтвердить почту"""
-        self.create_test_user()
         self.log_in()
         sleep(1)  # После логина может быть много разных страниц, чего ждать - не понятно
         assert "The debugger caught an exception in your WSGI application." not in self.driver.page_source
-        assert self.SITE_TITLE in self.driver.title
+        assert SITE_TITLE in self.driver.title
 
     def test_email_confirmation_required(self):
-        self.delete_test_user()
-        self.create_test_user()
         self.log_in()
         sleep(1)
         assert "please confirm your e-mail address" in self.driver.page_source
 
     def test_exam(self):
-        self.delete_test_user()
-        self.create_test_user(email_confirmed=True)
+        confirm_email()
 
         dr = self.driver
 
@@ -146,7 +156,7 @@ class Test_URL(BasicTest):
 
     def test_admin(self):
         dr = self.driver
-        dr.get(self.HOST + "/login")
+        dr.get(HOST + "/login")
         self.log_in(username=admin_name, password=admin_password)
         WebDriverWait(dr, 5).until(EC.presence_of_element_located((By.ID, "admin_action_form")))
         assert admin_name in dr.page_source
@@ -154,10 +164,9 @@ class Test_URL(BasicTest):
         assert "Set admin role" in dr.page_source
 
     def test_exam_done(self):
-        self.delete_test_user()
-        self.create_test_user(email_confirmed=True)
+        confirm_email()
         with db_session_ctx() as db:
-            user = db.query(User).filter(User.name == self.TEST_USERNAME).first()
+            user = db.query(User).filter(User.name == TEST_USERNAME).first()
             user.is_test_completed = True
 
         self.log_in()
@@ -165,8 +174,9 @@ class Test_URL(BasicTest):
         assert messages.TEST_COMPLETED in self.driver.page_source
 
     def test_logout(self):
-        self.create_test_user()
         self.log_in()
-        WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.ID, "logout_btn")))
+        # StaleElementReferenceException on next line
+        # WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.ID, "logout_btn")))
+        sleep(1)
         self.driver.find_element_by_id("logout_btn").click()
         WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.ID, "login_btn")))

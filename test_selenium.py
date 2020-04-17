@@ -1,4 +1,5 @@
 import pytest
+import json
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -22,11 +23,13 @@ import messages
 
 # TODO after each function clean, separate tests, tearup/down
 
-HOST = "http://localhost:5000"
-TEST_USERNAME = "ton_test_sign_in"
-TEST_PASSWORD = "test"
-TEST_EMAIL = "info.simple2b@gmail.com"
-SITE_TITLE = "Simple2b"
+with open('config.json', 'r') as file:
+    conf = json.load(file)["selenium"]
+    HOST = conf["HOST"]
+    TEST_USERNAME = conf["TEST_USERNAME"]
+    TEST_PASSWORD = conf["TEST_PASSWORD"]
+    TEST_EMAIL = conf["TEST_EMAIL"]
+    SITE_TITLE = conf["SITE_TITLE"]
 
 
 @pytest.fixture(scope="class")

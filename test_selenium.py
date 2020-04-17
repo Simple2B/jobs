@@ -39,9 +39,11 @@ def driver_init_ff(request):
     # If you are running Firefox on a system with no display, make sure you use headless mode.
     # https://stackoverflow.com/questions/52534658/webdriverexception-message-invalid-argument-cant-kill-an-exited-process-with
     options.headless = False  # TODO visualisation selenium option
-    if BROWSER == "firefox":  # Для использования нужно установить geckodriver в /usr/bin
+    if BROWSER == "firefox":
+        # Для использования нужно установить geckodriver в /usr/bin (https://github.com/mozilla/geckodriver/releases)
         driver = webdriver.Firefox(options=options)
-    elif BROWSER == "chrome":  # chromedriver
+    elif BROWSER == "chrome":
+        # нужно установить chromedriver в /usr/bin (https://chromedriver.chromium.org/downloads)
         driver = webdriver.Chrome()  # 'options=options' leads to error
     else:
         raise("only 'firefox' and 'chrome' supported")

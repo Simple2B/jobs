@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from invoke import task  # noqa
 from models import ModelBase, User, UserRole  # , UserRole

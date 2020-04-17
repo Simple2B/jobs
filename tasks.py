@@ -34,10 +34,14 @@ def print_db(_):
 
 
 @task
-def renew_config(_):
-    os.system('echo A | unzip -P bubu config.zip')
+def renew_config(_, passwd):
+    """Using: renew_config <passwd>
+    """
+    os.system('echo A | unzip -P {} config.zip'.format(passwd))
 
 
 @task
-def zip_config(_):
-    os.system('zip -P bubu config.zip config.json secret_settings.py')
+def zip_config(_, passwd):
+    """Using: zip_config <passwd>
+    """
+    os.system('zip -P {} config.zip config.json secret_settings.py'.format(passwd))

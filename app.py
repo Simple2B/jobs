@@ -121,8 +121,7 @@ def confirm():
     with db_session_ctx(read_only=False) as dsession:
         user = dsession.query(User).filter(User.email_confirmation_token == token).first()
         if user is None:
-            log(log.INFO, "User {} (id: {}) tried to confirm his email {} with invalid token {}"
-                .format(user.name, user.id, user.email, token))
+            log(log.INFO, "Someone tried to confirm his email with invalid token {}".format(token))
             return simple_message(messages.NO_SUCH_EMAIL_CONFIRMATION_TOKEN)
         else:
             if user.is_email_confirmed:
@@ -134,7 +133,7 @@ def confirm():
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
-    if not is_user_logged_in():
+    if not is_user_logged_in():  # FIXME after user signs in, there is a button to resend, but user is not logged in
         log(log.WARNING, "severe: Guest tried to post confirmation email resend request")
         return flask.redirect("/")
     else:

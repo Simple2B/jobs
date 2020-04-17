@@ -46,7 +46,6 @@ class User(ModelBase):
         print("debug: email_confirmation_token = ", self.email_confirmation_token)
 
     def send_confirmation_email(self, mail: Mail):
-        # TODO if user is test_user, do not send email
         email_settings = json.load(open("config.json"))["confirmation_email"]
         host = email_settings["HOST"]
         subject = email_settings["SUBJECT"]
@@ -55,7 +54,10 @@ class User(ModelBase):
         msg_template = email_settings["MSG_TEMPLATE"]
         html = msg_template.format(host=host, token=self.email_confirmation_token)
         confirm_msg = Message(subject=subject, recipients=recipients, sender=sender, html=html)
-        mail.send(confirm_msg)
+        with open('config.json', 'r') as file:
+            test_username = json.load(file)["selenium"]["TEST_USERNAME"]
+        if self.name != test_username:
+            mail.send(confirm_msg)
 
     def to_dict(self) -> dict:
         """ convert to dict """

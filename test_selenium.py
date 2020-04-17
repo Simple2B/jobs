@@ -34,7 +34,7 @@ with open('config.json', 'r') as file:
 
 
 @pytest.fixture(scope="class")
-def driver_init_ff(request):
+def driver_init(request):
     options = Options()
     # If you are running Firefox on a system with no display, make sure you use headless mode.
     # https://stackoverflow.com/questions/52534658/webdriverexception-message-invalid-argument-cant-kill-an-exited-process-with
@@ -51,13 +51,6 @@ def driver_init_ff(request):
     request.cls.driver = driver
     yield
     driver.close()
-
-
-def driver_init_chrome(request):
-    chrome_driver = webdriver.Chrome()  # Optional argument, if not specified will search path.
-    yield
-    # chrome_driver.quit()  # было в примере https://chromedriver.chromium.org/getting-started
-    chrome_driver.close()
 
 
 @pytest.fixture(scope="function")
@@ -88,7 +81,7 @@ def confirm_email():
         user.is_email_confirmed = True
 
 
-@pytest.mark.usefixtures("driver_init_ff")
+@pytest.mark.usefixtures("driver_init")
 @pytest.mark.usefixtures("clean")
 class BasicTest:
     pass

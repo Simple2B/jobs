@@ -1,44 +1,5 @@
 {%extends 'base.html'%}
 {%block content%}
-
-<script>
-    window.fbAsyncInit = function() {
-      FB.init({
-        appId      : '240991697306228',
-        cookie     : true,
-        xfbml      : true,
-        version    : 'v6.0'
-      });
-      FB.AppEvents.logPageView();
-    };
-
-    (function(d, s, id){
-       var js, fjs = d.getElementsByTagName(s)[0];
-       if (d.getElementById(id)) {return;}
-       js = d.createElement(s); js.id = id;
-       js.src = "https://connect.facebook.net/en_US/sdk.js";
-       fjs.parentNode.insertBefore(js, fjs);
-     }(document, 'script', 'facebook-jssdk'));
-
-    function statusChangeCallback(response) {
-        //console.log(response)
-        //console.log(response['authResponse']['accessToken'])
-        if(response['status'] == "connected") {
-            $.get( "https://graph.facebook.com/"+ response['authResponse']['userID'] +"?fields=email&access_token="+ response['authResponse']['accessToken'],
-                function( user_info ) {
-                alert( "Data Loaded: " + user_info["email"] );
-            });
-        }
-
-    }
-
-    function checkLoginState() {
-        FB.getLoginStatus(function(response) {
-            statusChangeCallback(response);
-        });
-    }
-  </script>
-
 <div class="container">
     <p id="fb_response"></p>
 <div class="row justify-content-center">
@@ -57,11 +18,6 @@
             </div>
             <div>
                 <input id="login_btn" type="submit" class="btn btn-outline-success btn-block mb-3"  value="Sign in">
-            </div>
-            <div>
-                <!--<fb:login-button  scope="public_profile,email" onlogin="checkLoginState();">
-                    <p>Sign in with facebook</p>
-                </fb:login-button>-->
             </div>
             <div><p>Don't have account yet? <a href="/join">Join us!</a></p></div>
         </form>

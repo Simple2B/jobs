@@ -37,6 +37,8 @@ def simple_message(message):
 
 @app.route("/")
 def home():
+    if 'need_back' in flask.session:
+        del flask.session['need_back']
     if not is_user_logged_in():
         # TODO flask.request.remote_addr returns 10.0.0.121, not actual adress
         log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
@@ -66,6 +68,7 @@ def login():
                 log(log.INFO, "User {username} (id: {id}) logged in".format(username=user.name, id=user.id))
                 return flask.redirect("/")
             else:
+                flask.session['need_back'] = True
                 log(log.ERROR, "Failed login attempt for user {} (id: {}) from addr {}"
                     .format(form.name, user.id if user else None, flask.request.remote_addr))
                 return flask.render_template("simple_message.html", message=messages.NO_SUCH_USER)
@@ -175,9 +178,9 @@ def admin_console():
                     if flask.request.form['admin_action'] == "unban":
                         user.is_active = True
                     if flask.request.form['admin_action'] == "make_admin":
-                        user.role = UserRole.ADMIN.value
+                        user.role = UserRole.admin
                     if flask.request.form['admin_action'] == "make_user":
-                        user.role = UserRole.USER.value
+                        user.role = UserRole.user
                 return flask.redirect("/", 302)
                 # admin console ban and make admin actions
 

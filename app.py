@@ -91,16 +91,15 @@ def join():
                 if user:
                     log(log.INFO, "Attempt to create already existing user {} (id: {}) from addr {}"
                         .format(user.name, user.id, flask.request.remote_addr))
-                    return "user {} already exists".format(form.name)
                     # TODO form error
-                else:
-                    new_user = User(form.name, form.e_mail, form.passwd, UserRole.user)
-                    db.add(new_user)
-                    log(log.INFO, "User created: {}".format(new_user))
-            with db_session_ctx() as db:
-                user = db.query(User).filter(User.name == form.name).first()
+                    return "user {} already exists".format(form.name)
+
+                user = User(form.name, form.e_mail, form.passwd, UserRole.user)
+                db.add(user)
+                log(log.INFO, "User created: {}".format(user))
                 user.generate_email_confirmation_token()
                 user.send_confirmation_email(mail)
+                flask.session['need_back'] = True
                 return flask.render_template("confirm_email.html", user=user)
         else:
             return flask.render_template("join.html", form=form)
@@ -128,6 +127,7 @@ def confirm():
                 return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
             user.is_email_confirmed = True
             log(log.INFO, "User {} (id: {}) confirmed his email {}".format(user.name, user.id, user.email))
+            flask.session['need_back'] = True
             return simple_message(messages.EMAIL_CONFIRMED)
 
 
@@ -147,6 +147,7 @@ def resend():
             log(log.INFO, "User {} (id: {}) requested email confirmation token re-generation".format(user.name, user.id))
             user.generate_email_confirmation_token()
             user.send_confirmation_email(mail)
+        flask.session['need_back'] = True
         return simple_message(messages.NEW_EMAIL_CONFIRMATION_TOKEN_SENT)
 
 

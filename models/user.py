@@ -1,4 +1,5 @@
 import json
+import flask
 from sqlalchemy import Column, Integer, String, Boolean, Enum  # , ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy.orm import relationship
@@ -7,6 +8,7 @@ from secrets import token_hex
 from flask_mail import Mail, Message
 from config import config
 from .user_role import UserRole
+from logger import log
 
 ModelBase = declarative_base(bind=db_engine)
 
@@ -38,7 +40,7 @@ class User(ModelBase):
 
     def generate_email_confirmation_token(self):
         self.email_confirmation_token = token_hex(32)
-        print("debug: email_confirmation_token = ", self.email_confirmation_token)
+        log(log.DEBUG, 'debug: email_confirmation_token = %s', self.email_confirmation_token)
 
     def send_confirmation_email(self, mail: Mail):
         email_settings = config["confirmation_email"]
@@ -47,7 +49,7 @@ class User(ModelBase):
         recipients = [self.email]
         sender = email_settings["SENDER"]
         msg_template = email_settings["MSG_TEMPLATE"]
-        html = msg_template.format(host=host, token=self.email_confirmation_token)
+        html = msg_template.format(host=flask.request.host, token=self.email_confirmation_token)
         confirm_msg = Message(subject=subject, recipients=recipients, sender=sender, html=html)
         test_username = config["selenium"]["TEST_USERNAME"]
         if self.name != test_username:

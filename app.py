@@ -2,7 +2,7 @@ import flask
 import json
 from flask_mail import Mail
 from forms.login_form import LoginForm
-from forms.signup_form import SignupForm
+from forms.join_form import JoinForm
 from forms.exam_form import ExamForm
 from models import User, UserRole
 from exam.skilltest import SkillTest
@@ -78,35 +78,32 @@ def login():
         return "error in form"
 
 
-@app.route("/join", methods=['GET'])
-def signup_get():
-    return flask.render_template('join.html', form=SignupForm())
-
-
-@app.route("/signup", methods=['POST'])
-#  TODO HASH
-def signup_post():
-    form = SignupForm()
-    if form.validate_on_submit():
-        user = None  # for return
-        with db_session_ctx() as db:
-            user = db.query(User).filter(User.name == form.name).first()
-            if user:
-                log(log.INFO, "Attempt to create already existing user {} (id: {}) from addr {}"
-                    .format(user.name, user.id, flask.request.remote_addr))
-                return "user {} already exists".format(form.name)
-                # TODO form error
-            else:
-                new_user = User(form.name, form.e_mail, form.passwd, UserRole.user)
-                db.add(new_user)
-                log(log.INFO, "User created: {}".format(new_user))
-        with db_session_ctx() as db:
-            user = db.query(User).filter(User.name == form.name).first()
-            user.generate_email_confirmation_token()
-            user.send_confirmation_email(mail)
-            return flask.render_template("confirm_email.html", user=user)
+@app.route("/join", methods=['GET', 'POST'])
+def join():
+    if flask.request.method == 'GET':
+        return flask.render_template('join.html', form=JoinForm())
     else:
-        return flask.render_template("join.html", form=form)
+        form = JoinForm()
+        if form.validate_on_submit():
+            user = None  # for return
+            with db_session_ctx() as db:
+                user = db.query(User).filter(User.name == form.name).first()
+                if user:
+                    log(log.INFO, "Attempt to create already existing user {} (id: {}) from addr {}"
+                        .format(user.name, user.id, flask.request.remote_addr))
+                    return "user {} already exists".format(form.name)
+                    # TODO form error
+                else:
+                    new_user = User(form.name, form.e_mail, form.passwd, UserRole.user)
+                    db.add(new_user)
+                    log(log.INFO, "User created: {}".format(new_user))
+            with db_session_ctx() as db:
+                user = db.query(User).filter(User.name == form.name).first()
+                user.generate_email_confirmation_token()
+                user.send_confirmation_email(mail)
+                return flask.render_template("confirm_email.html", user=user)
+        else:
+            return flask.render_template("join.html", form=form)
 
 
 @app.route("/confirm_email", methods=['GET'])
@@ -121,8 +118,8 @@ def confirm():
                 return flask.render_template("confirm_email.html", user=user)
             else:
                 return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
-    with db_session_ctx(read_only=False) as dsession:
-        user = dsession.query(User).filter(User.email_confirmation_token == token).first()
+    with db_session_ctx(read_only=False) as db:
+        user = db.query(User).filter(User.email_confirmation_token == token).first()
         if user is None:
             log(log.INFO, "Someone tried to confirm his email with invalid token {}".format(token))
             return simple_message(messages.NO_SUCH_EMAIL_CONFIRMATION_TOKEN)
@@ -141,8 +138,8 @@ def resend():
         return flask.redirect("/")
     else:
         user_id = flask.session['user_id']
-        with db_session_ctx() as dsession:
-            user: User = dsession.query(User).filter(User.id == user_id).first()
+        with db_session_ctx() as db:
+            user: User = db.query(User).filter(User.id == user_id).first()
             if user.is_email_confirmed:
                 log(log.WARNING, "User {} (id: {}) with already confirmed email requested token re-generation"
                     .format(user.name, user.id))

@@ -1,11 +1,12 @@
 import enum
+import json
 from sqlalchemy import Column, Integer, String, Boolean, Enum  # , ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy.orm import relationship
 from session import db_engine
 from secrets import token_hex
 from flask_mail import Mail, Message
-import json
+from config import config
 
 ModelBase = declarative_base(bind=db_engine)
 
@@ -46,7 +47,7 @@ class User(ModelBase):
         print("debug: email_confirmation_token = ", self.email_confirmation_token)
 
     def send_confirmation_email(self, mail: Mail):
-        email_settings = json.load(open("config.json"))["confirmation_email"]
+        email_settings = config["confirmation_email"]
         host = email_settings["HOST"]
         subject = email_settings["SUBJECT"]
         recipients = [self.email]
@@ -54,8 +55,7 @@ class User(ModelBase):
         msg_template = email_settings["MSG_TEMPLATE"]
         html = msg_template.format(host=host, token=self.email_confirmation_token)
         confirm_msg = Message(subject=subject, recipients=recipients, sender=sender, html=html)
-        with open('config.json', 'r') as file:
-            test_username = json.load(file)["selenium"]["TEST_USERNAME"]
+        test_username = config["selenium"]["TEST_USERNAME"]
         if self.name != test_username:
             mail.send(confirm_msg)
 

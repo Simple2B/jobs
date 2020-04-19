@@ -10,12 +10,12 @@ from session import db_session_ctx
 import secret_settings
 import messages
 from logger import log
+from config import config
 
 
 app = flask.Flask(__name__)
 app.secret_key = secret_settings.app_secret_key
 
-config = json.load(open("config.json"))
 app.config.update(config['mailer'])
 
 mail = Mail(app)
@@ -40,7 +40,7 @@ def home():
     if 'need_back' in flask.session:
         del flask.session['need_back']
     if not is_user_logged_in():
-        # FIXME flask.request.remote_addr returns 10.0.0.121, not actual adress
+        # FIXME flask.request.remote_addr returns 10.0.0.121, not actual address
         log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
         return flask.redirect("/login")
     user = fetch_user_by_id()
@@ -224,7 +224,7 @@ def skill_test_post():
         user = db.query(User).filter(User.id == flask.session['user_id']).first()
         user.test_results = json.dumps(SkillTest().as_list_with_answers(user_answers_array))
         user.is_test_completed = True
-    log(log.INFO, "User (id: {}) submited test results: {}".format(flask.session['user_id'], user_answers))
+    log(log.INFO, "User (id: {}) submitted test results: {}".format(flask.session['user_id'], user_answers))
     return simple_message(messages.TEST_COMPLETED)
 
 # TODO OpenID github, google, facebook

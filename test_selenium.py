@@ -1,5 +1,4 @@
 import pytest
-import json
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -12,6 +11,7 @@ from models import User, UserRole
 from exam.skilltest import SkillTest
 from secret_settings import admin_name, admin_password
 import messages
+from config import config
 # скачать geckodriver, положить в /user/bin
 # если ругается на permission, "chmod +x geckodriver"
 # если ругается на DISPLAY, "export DISPLAY=:0.0"
@@ -23,14 +23,13 @@ import messages
 
 # TODO after each function clean, separate tests, tearup/down
 
-with open('config.json', 'r') as file:
-    conf = json.load(file)["selenium"]
-    BROWSER = conf["BROWSER"]
-    HOST = conf["HOST"]
-    TEST_USERNAME = conf["TEST_USERNAME"]
-    TEST_PASSWORD = conf["TEST_PASSWORD"]
-    TEST_EMAIL = conf["TEST_EMAIL"]
-    SITE_TITLE = conf["SITE_TITLE"]
+conf = config["selenium"]
+BROWSER = conf["BROWSER"]
+HOST = conf["HOST"]
+TEST_USERNAME = conf["TEST_USERNAME"]
+TEST_PASSWORD = conf["TEST_PASSWORD"]
+TEST_EMAIL = conf["TEST_EMAIL"]
+SITE_TITLE = conf["SITE_TITLE"]
 
 
 @pytest.fixture(scope="class")

@@ -17,10 +17,10 @@
 
                 <tr>
                     <td><input type="checkbox" name="{{user.id}}" id="{{user.id}}"></td>
-                    {% for value in user.to_dict().values() %}
+                    {% for value in user.values() %}
                     <td>{{value}}</td>
                     {%endfor%}
-                 </tr>
+                </tr>
                 {%endfor%}
             </tbody>
         </table>

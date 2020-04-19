@@ -44,7 +44,6 @@ class User(ModelBase):
 
     def send_confirmation_email(self, mail: Mail):
         email_settings = config["confirmation_email"]
-        host = email_settings["HOST"]
         subject = email_settings["SUBJECT"]
         recipients = [self.email]
         sender = email_settings["SENDER"]
@@ -69,6 +68,28 @@ class User(ModelBase):
             # TODO для нормального отображения вопросов в админской консоли
             # https://stackoverflow.com/questions/18337407/saving-utf-8-texts-in-json-dumps-as-utf8-not-as-u-escape-sequence
         }
+
+    def values(self) -> list:
+        return [
+            self.id,
+            self.name,
+            self.email,
+            self.password,
+            self.role,
+            self.is_active,
+            self.is_email_confirmed,
+            self.rating
+        ]
+
+    @property
+    def rating(self) -> str:
+        if self.test_results is None:
+            return 'Unknown'
+        res = json.loads(self.test_results)
+        total = len(res)
+        correct_list = [i for i in res if int(i['correct_index']) == int(i['user_answer'])]
+        correct = len(correct_list)
+        return '({correct}/{total})'.format(correct=correct, total=total)
 
     def __repr__(self):
         if self.is_test_completed:

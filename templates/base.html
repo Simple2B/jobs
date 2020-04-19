@@ -28,7 +28,7 @@
         <a class="navbar-brand" href="https://simple2b.github.io/"><img src="https://simple2b.github.io/img/logo.svg" alt="Simple2B" height="64px"></a>
         <form class="form-inline my-2 my-lg-0" action="/logout" method="POST">
             {%if session['user_id']%}
-            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
+            <button id="logout_btn" class="btn btn-outline-success my-2 my-sm-0" type="submit">Logout</button>
             {%else%}
                 {%if session['need_back']%}
                     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Back</button>

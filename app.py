@@ -40,7 +40,7 @@ def home():
     if 'need_back' in flask.session:
         del flask.session['need_back']
     if not is_user_logged_in():
-        # TODO flask.request.remote_addr returns 10.0.0.121, not actual adress
+        # FIXME flask.request.remote_addr returns 10.0.0.121, not actual adress
         log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
         return flask.redirect("/login")
     user = fetch_user_by_id()
@@ -72,6 +72,7 @@ def login():
                 log(log.ERROR, "Failed login attempt for user {} (id: {}) from addr {}"
                     .format(form.name, user.id if user else None, flask.request.remote_addr))
                 return flask.render_template("simple_message.html", message=messages.NO_SUCH_USER)
+                # TODO form error, warning
     else:
         log(log.INFO, "Invalid login form submit from addr {}".format(flask.request.remote_addr))
         return "error in form"
@@ -94,6 +95,7 @@ def signup_post():
                 log(log.INFO, "Attempt to create already existing user {} (id: {}) from addr {}"
                     .format(user.name, user.id, flask.request.remote_addr))
                 return "user {} already exists".format(form.name)
+                # TODO form error
             else:
                 new_user = User(form.name, form.e_mail, form.passwd, UserRole.user)
                 db.add(new_user)
@@ -122,8 +124,7 @@ def confirm():
     with db_session_ctx(read_only=False) as dsession:
         user = dsession.query(User).filter(User.email_confirmation_token == token).first()
         if user is None:
-            log(log.INFO, "User {} (id: {}) tried to confirm his email {} with invalid token {}"
-                .format(user.name, user.id, user.email, token))
+            log(log.INFO, "Someone tried to confirm his email with invalid token {}".format(token))
             return simple_message(messages.NO_SUCH_EMAIL_CONFIRMATION_TOKEN)
         else:
             if user.is_email_confirmed:
@@ -135,7 +136,7 @@ def confirm():
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
-    if not is_user_logged_in():
+    if not is_user_logged_in():  # FIXME after user signs in, there is a button to resend, but user is not logged in
         log(log.WARNING, "severe: Guest tried to post confirmation email resend request")
         return flask.redirect("/")
     else:
@@ -228,3 +229,5 @@ def skill_test_post():
         user.is_test_completed = True
     log(log.INFO, "User (id: {}) submited test results: {}".format(flask.session['user_id'], user_answers))
     return simple_message(messages.TEST_COMPLETED)
+
+# TODO OpenID github, google, facebook

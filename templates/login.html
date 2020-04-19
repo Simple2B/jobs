@@ -1,6 +1,7 @@
 {%extends 'base.html'%}
 {%block content%}
 <div class="container">
+    <p id="fb_response"></p>
 <div class="row justify-content-center">
     <div class="col-lg-4 card">
     <div class="card-body">
@@ -16,12 +17,17 @@
                 <input type="password" class="form-control"  name="password">
             </div>
             <div>
-                <input type="submit" class="btn btn-outline-success btn-block mb-3"  value="Sign in">
+                <input id="login_btn" type="submit" class="btn btn-outline-success btn-block mb-3"  value="Sign in">
             </div>
-            <div><p>Don't hasve account yet? <a href="/join">Join us!</a></p></div>
+            <div><p>Don't have account yet? <a href="/join">Join us!</a></p></div>
         </form>
     </div>
     </div>
 </div>
 </div>
 {%endblock%}
+
+<!--
+curl -i -X GET "https://graph.facebook.com/1014161028985304?fields=birthday,email,hometown&access_token=EAADbLkCDAnQBAO1ZBhM7VZBfigKT68CzsEmYjQ6Wykk6eTsCrkKC15OZBCmEc4Hmb3rMGZB4p9fkK15MPr0GxZCb0yH6zfL1JTcBdhYUuf5bbRd1i5z3DCFWdBJr9FGkXgiWbjq5SR6z7uOPCG7TZAZApdkF6VEBGxcpi2UztQW90jI75VuZAGsYZBlY4ZAyZAlnqlIxEp31M9aTwZDZD"
+
+-->

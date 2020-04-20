@@ -85,7 +85,6 @@ def join():
     else:
         form = JoinForm()
         if form.validate_on_submit():
-            user = None  # for return
             with db_session_ctx() as db:
                 user = db.query(User).filter(User.name == form.name).first()
                 if user:
@@ -97,6 +96,9 @@ def join():
                 user = User(form.name, form.e_mail, form.passwd, UserRole.user)
                 db.add(user)
                 log(log.INFO, "User created: {}".format(user))
+            # Send confirmation email
+            with db_session_ctx() as db:
+                user = db.query(User).filter(User.name == form.name).first()
                 user.generate_email_confirmation_token()
                 user.send_confirmation_email(mail)
                 flask.session['need_back'] = True

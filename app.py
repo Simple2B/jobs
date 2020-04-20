@@ -2,7 +2,7 @@ import flask
 import json
 from flask_mail import Mail
 from forms.login_form import LoginForm
-from forms.signup_form import SignupForm
+from forms.join_form import JoinForm
 from forms.exam_form import ExamForm
 from models import User, UserRole
 from exam.skilltest import SkillTest
@@ -10,12 +10,12 @@ from session import db_session_ctx
 import secret_settings
 import messages
 from logger import log
+from config import config
 
 
 app = flask.Flask(__name__)
 app.secret_key = secret_settings.app_secret_key
 
-config = json.load(open("config.json"))
 app.config.update(config['mailer'])
 
 mail = Mail(app)
@@ -37,8 +37,10 @@ def simple_message(message):
 
 @app.route("/")
 def home():
+    if 'need_back' in flask.session:
+        del flask.session['need_back']
     if not is_user_logged_in():
-        # TODO flask.request.remote_addr returns 10.0.0.121, not actual adress
+        # FIXME flask.request.remote_addr returns 10.0.0.121, not actual address
         log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
         return flask.redirect("/login")
     user = fetch_user_by_id()
@@ -66,42 +68,43 @@ def login():
                 log(log.INFO, "User {username} (id: {id}) logged in".format(username=user.name, id=user.id))
                 return flask.redirect("/")
             else:
+                flask.session['need_back'] = True
                 log(log.ERROR, "Failed login attempt for user {} (id: {}) from addr {}"
                     .format(form.name, user.id if user else None, flask.request.remote_addr))
                 return flask.render_template("simple_message.html", message=messages.NO_SUCH_USER)
+                # TODO form error, warning
     else:
         log(log.INFO, "Invalid login form submit from addr {}".format(flask.request.remote_addr))
         return "error in form"
 
 
-@app.route("/join", methods=['GET'])
-def signup_get():
-    return flask.render_template('join.html', form=SignupForm())
-
-
-@app.route("/signup", methods=['POST'])
-#  TODO HASH
-def signup_post():
-    form = SignupForm()
-    if form.validate_on_submit():
-        user = None  # for return
-        with db_session_ctx() as db:
-            user = db.query(User).filter(User.name == form.name).first()
-            if user:
-                log(log.INFO, "Attempt to create already existing user {} (id: {}) from addr {}"
-                    .format(user.name, user.id, flask.request.remote_addr))
-                return "user {} already exists".format(form.name)
-            else:
-                new_user = User(form.name, form.e_mail, form.passwd, UserRole.user)
-                db.add(new_user)
-                log(log.INFO, "User created: {}".format(new_user))
-        with db_session_ctx() as db:
-            user = db.query(User).filter(User.name == form.name).first()
-            user.generate_email_confirmation_token()
-            user.send_confirmation_email(mail)
-            return flask.render_template("confirm_email.html", user=user)
+@app.route("/join", methods=['GET', 'POST'])
+def join():
+    if flask.request.method == 'GET':
+        return flask.render_template('join.html', form=JoinForm())
     else:
-        return flask.render_template("join.html", form=form)
+        form = JoinForm()
+        if form.validate_on_submit():
+            with db_session_ctx() as db:
+                user = db.query(User).filter(User.name == form.name).first()
+                if user:
+                    log(log.INFO, "Attempt to create already existing user {} (id: {}) from addr {}"
+                        .format(user.name, user.id, flask.request.remote_addr))
+                    # TODO form error
+                    return "user {} already exists".format(form.name)
+
+                user = User(form.name, form.e_mail, form.passwd, UserRole.user)
+                db.add(user)
+                log(log.INFO, "User created: {}".format(user))
+            # Send confirmation email
+            with db_session_ctx() as db:
+                user = db.query(User).filter(User.name == form.name).first()
+                user.generate_email_confirmation_token()
+                user.send_confirmation_email(mail)
+                flask.session['need_back'] = True
+                return flask.render_template("confirm_email.html", user=user)
+        else:
+            return flask.render_template("join.html", form=form)
 
 
 @app.route("/confirm_email", methods=['GET'])
@@ -116,29 +119,29 @@ def confirm():
                 return flask.render_template("confirm_email.html", user=user)
             else:
                 return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
-    with db_session_ctx(read_only=False) as dsession:
-        user = dsession.query(User).filter(User.email_confirmation_token == token).first()
+    with db_session_ctx(read_only=False) as db:
+        user = db.query(User).filter(User.email_confirmation_token == token).first()
         if user is None:
-            log(log.INFO, "User {} (id: {}) tried to confirm his email {} with invalid token {}"
-                .format(user.name, user.id, user.email, token))
+            log(log.INFO, "Someone tried to confirm his email with invalid token {}".format(token))
             return simple_message(messages.NO_SUCH_EMAIL_CONFIRMATION_TOKEN)
         else:
             if user.is_email_confirmed:
                 return simple_message(messages.EMAIL_ALREADY_CONFIRMED)
             user.is_email_confirmed = True
             log(log.INFO, "User {} (id: {}) confirmed his email {}".format(user.name, user.id, user.email))
+            flask.session['need_back'] = True
             return simple_message(messages.EMAIL_CONFIRMED)
 
 
 @app.route("/confirm_email/resend", methods=['POST'])
 def resend():
-    if not is_user_logged_in():
+    if not is_user_logged_in():  # FIXME after user signs in, there is a button to resend, but user is not logged in
         log(log.WARNING, "severe: Guest tried to post confirmation email resend request")
         return flask.redirect("/")
     else:
         user_id = flask.session['user_id']
-        with db_session_ctx() as dsession:
-            user: User = dsession.query(User).filter(User.id == user_id).first()
+        with db_session_ctx() as db:
+            user: User = db.query(User).filter(User.id == user_id).first()
             if user.is_email_confirmed:
                 log(log.WARNING, "User {} (id: {}) with already confirmed email requested token re-generation"
                     .format(user.name, user.id))
@@ -146,6 +149,7 @@ def resend():
             log(log.INFO, "User {} (id: {}) requested email confirmation token re-generation".format(user.name, user.id))
             user.generate_email_confirmation_token()
             user.send_confirmation_email(mail)
+        flask.session['need_back'] = True
         return simple_message(messages.NEW_EMAIL_CONFIRMATION_TOKEN_SENT)
 
 
@@ -175,9 +179,9 @@ def admin_console():
                     if flask.request.form['admin_action'] == "unban":
                         user.is_active = True
                     if flask.request.form['admin_action'] == "make_admin":
-                        user.role = UserRole.ADMIN.value
+                        user.role = UserRole.admin
                     if flask.request.form['admin_action'] == "make_user":
-                        user.role = UserRole.USER.value
+                        user.role = UserRole.user
                 return flask.redirect("/", 302)
                 # admin console ban and make admin actions
 
@@ -223,5 +227,7 @@ def skill_test_post():
         user = db.query(User).filter(User.id == flask.session['user_id']).first()
         user.test_results = json.dumps(SkillTest().as_list_with_answers(user_answers_array))
         user.is_test_completed = True
-    log(log.INFO, "User (id: {}) submited test results: {}".format(flask.session['user_id'], user_answers))
+    log(log.INFO, "User (id: {}) submitted test results: {}".format(flask.session['user_id'], user_answers))
     return simple_message(messages.TEST_COMPLETED)
+
+# TODO OpenID github, google, facebook

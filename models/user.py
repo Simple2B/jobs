@@ -1,19 +1,16 @@
-import enum
+import json
+import flask
 from sqlalchemy import Column, Integer, String, Boolean, Enum  # , ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy.orm import relationship
 from session import db_engine
 from secrets import token_hex
 from flask_mail import Mail, Message
-import json
+from config import config
+from .user_role import UserRole
+from logger import log
 
 ModelBase = declarative_base(bind=db_engine)
-
-
-class UserRole(enum.Enum):
-    admin = 'admin'
-    user = 'user'
-    guest = 'guest'
 
 
 class User(ModelBase):
@@ -43,18 +40,19 @@ class User(ModelBase):
 
     def generate_email_confirmation_token(self):
         self.email_confirmation_token = token_hex(32)
-        print("debug: email_confirmation_token = ", self.email_confirmation_token)
+        log(log.DEBUG, 'debug: email_confirmation_token = %s', self.email_confirmation_token)
 
     def send_confirmation_email(self, mail: Mail):
-        email_settings = json.load(open("config.json"))["confirmation_email"]
-        host = email_settings["HOST"]
+        email_settings = config["confirmation_email"]
         subject = email_settings["SUBJECT"]
         recipients = [self.email]
         sender = email_settings["SENDER"]
         msg_template = email_settings["MSG_TEMPLATE"]
-        html = msg_template.format(host=host, token=self.email_confirmation_token)
+        html = msg_template.format(host=flask.request.host, token=self.email_confirmation_token)
         confirm_msg = Message(subject=subject, recipients=recipients, sender=sender, html=html)
-        mail.send(confirm_msg)
+        test_username = config["selenium"]["TEST_USERNAME"]
+        if self.name != test_username:
+            mail.send(confirm_msg)
 
     def to_dict(self) -> dict:
         """ convert to dict """
@@ -71,6 +69,28 @@ class User(ModelBase):
             # https://stackoverflow.com/questions/18337407/saving-utf-8-texts-in-json-dumps-as-utf8-not-as-u-escape-sequence
         }
 
+    def values(self) -> list:
+        return [
+            self.id,
+            self.name,
+            self.email,
+            self.password,
+            self.role,
+            self.is_active,
+            self.is_email_confirmed,
+            self.rating
+        ]
+
+    @property
+    def rating(self) -> str:
+        if self.test_results is None:
+            return 'Unknown'
+        res = json.loads(self.test_results)
+        total = len(res)
+        correct_list = [i for i in res if int(i['correct_index']) == int(i['user_answer'])]
+        correct = len(correct_list)
+        return '({correct}/{total})'.format(correct=correct, total=total)
+
     def __repr__(self):
         if self.is_test_completed:
             results = json.loads(self.test_results)
@@ -79,21 +99,7 @@ class User(ModelBase):
         print_template = """id: {}\tname: {}\tpassword: {}\temail: {}\trole: {}\tis_active: {}
             is_email_confirmed: {}\temail_confirmation_token: {}\tis_test_completed: {}\ttest_results:\n\t{}
             ------------------------"""
-        return print_template.format(self.id, self.name, self.password, self.email, self.role,
-                                     self.is_active, self.is_email_confirmed,
-                                     self.email_confirmation_token, self.is_test_completed, results)
-
-# в sqlite по умолчанию отключены foreign keys (https://www.sqlite.org/foreignkeys.html пункт 2)
-# включать их - много мороки, а пользы мало: только возможность прои создании пользователя убедиться, что такая роль существует
-# class UserRole(ModelBase):
-
-#     __tablename__: str = 'user_role'
-
-#     name = Column(String, primary_key=True)
-#     # users = relationship('User', backref='users', lazy='dynamic')
-
-#     def __init__(self, name):
-#         self.name = name
-
-#     def __repr__(self):
-#         return "name {}".format(self.name)
+        return print_template.format(
+            self.id, self.name, self.password, self.email, self.role,
+            self.is_active, self.is_email_confirmed,
+            self.email_confirmation_token, self.is_test_completed, results)

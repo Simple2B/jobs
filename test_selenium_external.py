@@ -1,10 +1,10 @@
-import pytest
-from test_selenium import BasicTest, driver_init
+# import pytest
+from test_selenium import BasicTest, driver_init  # noqa
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from time import sleep
+# from time import sleep
 from secrets import token_hex
 from config import config
 from secret_settings import admin_name, admin_password
@@ -12,7 +12,7 @@ from secret_settings import admin_name, admin_password
 
 class TestExternal(BasicTest):
     s_conf = config["selenium"]
-    HOST = "https://flav1us.pythonanywhere.com"  # TODO export to config
+    HOST = "http://localhost:5000"  # "https://flav1us.pythonanywhere.com"  # TODO export to config
     TEST_CREATED_USERNAME = s_conf["TEST_USERNAME"]
     TEST_NEW_USERNAME = s_conf["TEST_USERNAME"] + token_hex(8)  # during join test new user will be created each time
     TEST_PASSWORD = s_conf["TEST_PASSWORD"]
@@ -47,7 +47,7 @@ class TestExternal(BasicTest):
         assert "Ban" in dr.page_source
         assert "Set admin role" in dr.page_source
 
-    @pytest.mark.skip(reason="creates new user each time")
+    # @pytest.mark.skip(reason="creates new user each time")
     def test_join(self):
         dr = self.driver
         dr.get(self.HOST + "/join")
@@ -61,11 +61,21 @@ class TestExternal(BasicTest):
         s_pwd.send_keys(Keys.RETURN)
         # sleep(3)
         WebDriverWait(dr, 5).until(EC.presence_of_element_located((By.ID, 'conf_msg')))
-        assert "please confirm your e-mail address" in dr.page_source
-        sleep(2)
+        assert "please confirm your e-mail address" in dr.page_source  # FIXME not working if several pages
 
         s_logout = dr.find_element_by_id("logout_btn")
         s_logout.click()
         self.log_in(admin_name, admin_password)
-        assert self.TEST_USERNAME in dr.page_source
-        sleep(2)
+        assert self.TEST_NEW_USERNAME in dr.page_source
+
+        # перебираем строки таблицы
+        for tr in dr.find_elements(By.XPATH, "//*[@id=\"admin_console_users\"]/tbody/tr"):
+            # в кажом стобце строки ищем имя пользователя
+            for subelem in tr.find_elements_by_tag_name("td"):
+                # если такое имя пользователя есть в строке, нажимаем чекбокс из этой строки
+                if self.TEST_NEW_USERNAME in subelem.text:
+                    checkbox = tr.find_element(By.TAG_NAME, "input")
+                    checkbox.click()
+                    break
+        dr.find_element_by_id("delete_user_btn").click()
+        assert self.TEST_NEW_USERNAME not in dr.page_source

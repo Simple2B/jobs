@@ -1,7 +1,7 @@
 {%extends 'base.html'%}
 {%block content%}
     <form action="/admin" method="POST" id="admin_action_form">
-        <table id="example" class="display" style="width:100%">
+        <table id="admin_console_users" class="display" style="width:100%">
             <thead>
 
                 <tr>
@@ -26,14 +26,15 @@
         </table>
 
 
-        <button class="button button-primary" type="submit" name="admin_action" value="ban">Ban</button>
-        <button class="button button-primary" type="submit" name="admin_action" value="unban">Unban</button>
-        <button class="button button-primary" type="submit" name="admin_action" value="make_admin">Set admin role</button>
-        <button class="button button-primary" type="submit" name="admin_action" value="make_user">Set user role</button>
+        <button type="submit" name="admin_action" value="ban">Ban</button>
+        <button type="submit" name="admin_action" value="unban">Unban</button>
+        <button type="submit" name="admin_action" value="make_admin">Set admin role</button>
+        <button type="submit" name="admin_action" value="make_user">Set user role</button>
+        <button id="delete_user_btn" type="submit" name="admin_action" value="delete_user">Delete user</button>
     </form>
         <script>
             $(document).ready(function() {
-                $('#example').DataTable( {
+                $('#admin_console_users').DataTable( {
                     "autoWidth": true,
                     "order": [[ 3, "desc" ]]
                 } );

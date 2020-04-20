@@ -182,6 +182,8 @@ def admin_console():
                         user.role = UserRole.admin
                     if flask.request.form['admin_action'] == "make_user":
                         user.role = UserRole.user
+                    if flask.request.form['admin_action'] == "delete_user":
+                        db.delete(user)
                 return flask.redirect("/", 302)
                 # admin console ban and make admin actions
 

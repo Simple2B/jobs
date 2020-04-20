@@ -81,11 +81,11 @@ def confirm_email():
 
 
 @pytest.mark.usefixtures("driver_init")
-@pytest.mark.usefixtures("clean")
 class BasicTest:
     pass
 
 
+@pytest.mark.usefixtures("clean")
 class Test_URL(BasicTest):
 
     def log_in(self, username=TEST_USERNAME, password=TEST_PASSWORD):

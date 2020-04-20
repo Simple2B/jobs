@@ -33,10 +33,11 @@ class TestExternal(BasicTest):
         assert self.s_conf["SITE_TITLE"] in self.driver.title
 
     def test_login(s):
-        s.log_in()
+        s.log_in(username=s.TEST_CREATED_USERNAME, password=s.TEST_PASSWORD)
         # assert "The debugger caught an exception in your WSGI application." not in self.driver.page_source
         assert "exception" not in s.driver.page_source
         assert s.SITE_TITLE in s.driver.title
+        s.driver.find_element_by_id("logout_btn").click()
 
     def test_admin(self):
         dr = self.driver
@@ -46,6 +47,7 @@ class TestExternal(BasicTest):
         assert admin_name in dr.page_source
         assert "Ban" in dr.page_source
         assert "Set admin role" in dr.page_source
+        dr.find_element_by_id("logout_btn").click()
 
     # @pytest.mark.skip(reason="creates new user each time")
     def test_join(self):
@@ -63,7 +65,7 @@ class TestExternal(BasicTest):
         WebDriverWait(dr, 5).until(EC.presence_of_element_located((By.ID, 'conf_msg')))
         assert "please confirm your e-mail address" in dr.page_source  # FIXME not working if several pages
 
-        s_logout = dr.find_element_by_id("logout_btn")
+        s_logout = dr.find_element_by_id("back_btn")
         s_logout.click()
         self.log_in(admin_name, admin_password)
         assert self.TEST_NEW_USERNAME in dr.page_source

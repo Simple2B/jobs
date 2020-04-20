@@ -3,6 +3,7 @@ import os
 from invoke import task  # noqa
 from models import ModelBase, User, UserRole  # , UserRole
 from session import db_session_ctx
+from config import config
 
 
 @task
@@ -17,7 +18,9 @@ def renew_db(_):
         # role_admin = UserRole('admin')
         admin = User(name=admin_name, email=admin_email, passwd=admin_password, role=UserRole.admin)
         admin.is_email_confirmed = True
-        test_user = User(name='ton_user', email='an.malyshko@gmail.com', passwd='123', role=UserRole.user)
+        s_conf = config["selenium"]
+        test_user = User(name=s_conf['TEST_USERNAME'], email=s_conf['TEST_EMAIL'], passwd=s_conf['TEST_PASSWORD'],
+                         role=UserRole.user)
         test_user.is_email_confirmed = True
         # session.add(role_admin)
         dsession.add(admin)

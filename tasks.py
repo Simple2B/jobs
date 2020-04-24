@@ -26,8 +26,10 @@ def renew_db(_):
 
 @task
 def print_db(_):
-    with db_session_ctx(read_only=True) as session:
-        all = session.query(User).all()
+    from session import db_session_ctx
+    from models import User
+    with db_session_ctx(read_only=True) as db:
+        all = db.query(User).all()
         print("database users:")
         for user in all:
             print(user)

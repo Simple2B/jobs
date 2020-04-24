@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 from invoke import task  # noqa
-from models import ModelBase, User, UserRole  # , UserRole
+from models import ModelBase, User, UserRole, GithubUser
 from session import db_session_ctx
 from config import config
 
@@ -26,6 +26,12 @@ def renew_db(_):
         dsession.add(admin)
         dsession.add(test_user)
 
+        test_github_user = GithubUser(name=s_conf['TEST_USERNAME'], email=s_conf['TEST_EMAIL'], passwd=s_conf['TEST_PASSWORD'],
+                                      role=UserRole.user, github_access_token="qwe321", github_id="id_"+s_conf['TEST_USERNAME'],
+                                      github_login=s_conf['TEST_USERNAME'])
+
+        dsession.add(test_github_user)
+
 
 @task
 def print_db(_):
@@ -33,6 +39,10 @@ def print_db(_):
         all = session.query(User).all()
         print("database users:")
         for user in all:
+            print(user)
+        git_all = session.query(GithubUser).all()
+        print("database github users:")
+        for user in git_all:
             print(user)
 
 

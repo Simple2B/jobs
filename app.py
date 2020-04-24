@@ -4,7 +4,8 @@ from flask_mail import Mail
 from forms.login_form import LoginForm
 from forms.join_form import JoinForm
 from forms.exam_form import ExamForm
-from models import User, UserRole
+from flask_github import GitHub
+from models import User, UserRole, GithubUser
 from exam.skilltest import SkillTest
 from session import db_session_ctx
 import secret_settings
@@ -16,9 +17,14 @@ from config import config
 app = flask.Flask(__name__)
 app.secret_key = secret_settings.app_secret_key
 
+app.config['GITHUB_CLIENT_ID'] = secret_settings.github_client_id
+app.config['GITHUB_CLIENT_SECRET'] = secret_settings.github_client_secret
+
 app.config.update(config['mailer'])
 
 mail = Mail(app)
+
+github = GitHub(app)
 
 
 def is_user_logged_in():
@@ -231,5 +237,43 @@ def skill_test_post():
         user.is_test_completed = True
     log(log.INFO, "User (id: {}) submitted test results: {}".format(flask.session['user_id'], user_answers))
     return simple_message(messages.TEST_COMPLETED)
+
+
+@github.access_token_getter
+def token_getter():
+    user = flask.g.user
+    if user is not None:
+        return user.github_access_token
+
+
+@app.route("/github_login", methods=['POST'])
+def github_login():
+    return github.authorize()
+
+
+@app.route("/github_auth_callback")
+@github.authorized_handler
+def authorized_github_callback(access_token):
+    next_url = "/"
+    if access_token is None:
+        return flask.redirect(next_url)
+
+    with db_session_ctx() as db:
+        user = db.query(GithubUser).filter(GithubUser.github_access_token == access_token).first()
+        if user is None:
+            user = GithubUser("name", "email", "passwd", UserRole.user, access_token, "github_id", "github_login")
+            db.add(user)
+
+        # Not necessary to get these details here
+        # but it helps humans to identify users easily.
+        flask.g.user = user
+        github_user = github.get('/user')
+        user.github_id = github_user['id']
+        user.github_login = github_user['login']
+
+    with db_session_ctx() as db:
+        user = db.query(GithubUser).filter(GithubUser.github_access_token == access_token).first()
+        flask.session['user_id'] = user.id
+        return flask.redirect(next_url)
 
 # TODO OpenID github, google, facebook

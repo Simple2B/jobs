@@ -19,7 +19,6 @@ def renew_db(_):
         admin.is_email_confirmed = True
         test_user = User(name='ton_user', email='an.malyshko@gmail.com', passwd='123', role=UserRole.user)
         test_user.is_email_confirmed = True
-        # session.add(role_admin)
         db.add(admin)
         db.add(test_user)
 

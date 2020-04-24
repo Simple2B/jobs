@@ -6,3 +6,4 @@ invoke
 Flask-Mail
 pytest
 selenium
+email-validator

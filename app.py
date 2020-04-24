@@ -262,6 +262,7 @@ def authorized_github_callback(access_token):
         user = db.query(GithubUser).filter(GithubUser.github_access_token == access_token).first()
         if user is None:
             user = GithubUser("name", "email", "passwd", UserRole.user, access_token, "github_id", "github_login")
+            user.is_email_confirmed = True
             db.add(user)
 
         # Not necessary to get these details here

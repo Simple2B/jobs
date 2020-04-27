@@ -243,7 +243,7 @@ def skill_test_post():
 def token_getter():
     user = flask.g.user
     if user is not None:
-        return user.github_access_token
+        return user.oauth_access_token
 
 
 @app.route("/github_login", methods=['POST'])

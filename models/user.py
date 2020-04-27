@@ -22,7 +22,7 @@ class User(ModelBase):
     email = Column(String)
     password = Column(String)
     role = Column(Enum(UserRole))  # , ForeignKey('user_role.name'))
-    auth_type = Column(String)
+    auth_type = Column(Enum(AuthType))
     oauth_id = Column(String)
     oauth_access_token = Column(String)
     # user_role = relationship("UserRole")

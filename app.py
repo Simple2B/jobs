@@ -5,7 +5,7 @@ from forms.login_form import LoginForm
 from forms.join_form import JoinForm
 from forms.exam_form import ExamForm
 from flask_github import GitHub
-from models import User, UserRole, GithubUser
+from models import User, UserRole, AuthType
 from exam.skilltest import SkillTest
 from session import db_session_ctx
 import secret_settings
@@ -259,9 +259,9 @@ def authorized_github_callback(access_token):
         return flask.redirect(next_url)
 
     with db_session_ctx() as db:
-        user = db.query(GithubUser).filter(GithubUser.github_access_token == access_token).first()
+        user = db.query(User).filter(User.oauth_access_token == access_token and User.auth_type == AuthType.github).first()
         if user is None:
-            user = GithubUser("name", "email", "passwd", UserRole.user, access_token, "github_id", "github_login")
+            user = User("github_username_placeholder", "email", None, UserRole.user, AuthType.github, "github_id_placeholder", access_token)
             user.is_email_confirmed = True
             db.add(user)
 
@@ -269,11 +269,11 @@ def authorized_github_callback(access_token):
         # but it helps humans to identify users easily.
         flask.g.user = user
         github_user = github.get('/user')
-        user.github_id = github_user['id']
-        user.github_login = github_user['login']
+        user.oauth_id = github_user['id']
+        user.name = github_user['login']
 
     with db_session_ctx() as db:
-        user = db.query(GithubUser).filter(GithubUser.github_access_token == access_token).first()
+        user = db.query(User).filter(User.oauth_access_token == access_token and User.auth_type == AuthType.github).first()
         flask.session['user_id'] = user.id
         return flask.redirect(next_url)
 

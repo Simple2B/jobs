@@ -47,7 +47,7 @@ def home():
         del flask.session['need_back']
     if not is_user_logged_in():
         # FIXME flask.request.remote_addr returns 10.0.0.121, not actual address
-        log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
+        log(log.INFO, "Guest connected from addr {}".format(flask.request.remote_addr))
         return flask.redirect("/login")
     user = fetch_user_by_id()
     if not user.is_active:

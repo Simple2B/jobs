@@ -1,4 +1,5 @@
 import pytest
+import os
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -23,7 +24,11 @@ from config import config
 
 # TODO after each function clean, separate tests, tearup/down
 
+
 conf = config["selenium"]
+
+os.environ["DISPLAY"] = conf["DISPLAY_ENV_VARIABLE"]  # TODO test, set depending on potion.headless
+
 BROWSER = conf["BROWSER"]
 HOST = conf["HOST"]
 TEST_USERNAME = conf["TEST_USERNAME"]

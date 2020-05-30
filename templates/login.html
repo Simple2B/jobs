@@ -1,4 +1,39 @@
 {%extends 'base.html'%}
+
+{%block head%}
+
+<script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '240991697306228',
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v7.0'
+      });
+
+      FB.AppEvents.logPageView();
+
+    };
+
+    (function(d, s, id){
+       var js, fjs = d.getElementsByTagName(s)[0];
+       if (d.getElementById(id)) {return;}
+       js = d.createElement(s); js.id = id;
+       js.src = "https://connect.facebook.net/en_US/sdk.js";
+       fjs.parentNode.insertBefore(js, fjs);
+     }(document, 'script', 'facebook-jssdk'));
+
+    function statusChangeCallback(response) {
+        console.log(response);
+    }
+
+    FB.getLoginStatus(function(response) {
+        statusChangeCallback(response);
+    });
+</script>
+
+{%endblock%}
+
 {%block content%}
 <div class="container">
     <p id="fb_response"></p>
@@ -22,7 +57,7 @@
             <div><p>Don't have account yet? <a href="/join">Join us!</a></p></div>
         </form>
         <form action="/github_login" method="POST">
-            <input type="submit" class="btn btn-primary">Sign in with GitHub</button>
+            <input type="submit" class="btn btn-primary" value="Sign in with GitHub">
         </form>
     </div>
     </div>

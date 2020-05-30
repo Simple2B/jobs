@@ -8,6 +8,7 @@ from secrets import token_hex
 from flask_mail import Mail, Message
 from config import config
 from .user_role import UserRole
+from .auth_type import AuthType
 from logger import log
 
 ModelBase = declarative_base(bind=db_engine)
@@ -21,6 +22,9 @@ class User(ModelBase):
     email = Column(String)
     password = Column(String)
     role = Column(Enum(UserRole))  # , ForeignKey('user_role.name'))
+    auth_type = Column(Enum(AuthType))
+    oauth_id = Column(String)
+    oauth_access_token = Column(String)
     # user_role = relationship("UserRole")
     is_active = Column(Boolean)
     is_email_confirmed = Column(Boolean)
@@ -28,11 +32,15 @@ class User(ModelBase):
     is_test_completed = Column(Boolean)
     test_results = Column(String)
 
-    def __init__(self, name, email, passwd, role: UserRole):
+    def __init__(self, name, email, passwd, role: UserRole, auth_type: AuthType = AuthType.login_pwd,
+                 oauth_id=None, oauth_access_token=None):
         self.name = name
         self.email = email
         self.password = passwd
         self.role = role.value
+        self.auth_type = auth_type
+        self.oauth_id = oauth_id
+        self.oauth_access_token = oauth_access_token
         self.is_active = True
         self.is_email_confirmed = False
         self.is_test_completed = False
@@ -62,6 +70,9 @@ class User(ModelBase):
             "email": self.email,
             "password": self.password,
             "role": self.role,
+            "auth_type": self.auth_type,
+            "oauth_id": self.oauth_id,
+            "oauth_access_token": self.oauth_access_token,
             "is_active": self.is_active,
             "email_conf": self.is_email_confirmed,
             "test_results": self.test_results
@@ -76,6 +87,9 @@ class User(ModelBase):
             self.email,
             self.password,
             self.role,
+            self.auth_type,
+            self.oauth_id,
+            self.oauth_access_token,
             self.is_active,
             self.is_email_confirmed,
             self.rating
@@ -96,10 +110,10 @@ class User(ModelBase):
             results = json.loads(self.test_results)
         else:
             results = ""
-        print_template = """id: {}\tname: {}\tpassword: {}\temail: {}\trole: {}\tis_active: {}
+        print_template = """id: {}\tname: {}\tpassword: {}\temail: {}\trole: {}\tauth_type: {}\toauth_id: {}\toauth_access_token: {}\tis_active: {}
             is_email_confirmed: {}\temail_confirmation_token: {}\tis_test_completed: {}\ttest_results:\n\t{}
             ------------------------"""
         return print_template.format(
             self.id, self.name, self.password, self.email, self.role,
-            self.is_active, self.is_email_confirmed,
+            self.auth_type, self.oauth_id, self.oauth_access_token, self.is_active, self.is_email_confirmed,
             self.email_confirmation_token, self.is_test_completed, results)

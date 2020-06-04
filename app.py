@@ -1,5 +1,6 @@
 import flask
 import json
+import requests
 from flask_mail import Mail
 from forms.login_form import LoginForm
 from forms.join_form import JoinForm
@@ -50,6 +51,9 @@ def home():
         log(log.INFO, "Guest connected from addr %s", flask.request.remote_addr)
         return flask.redirect("/login")
     user = fetch_user_by_id()
+    if user is None:
+        flask.session['user_id'] = None
+        return flask.redirect("/login")
     if not user.is_active:
         return "User is banned"
     if not user.is_email_confirmed:
@@ -61,6 +65,7 @@ def home():
     return simple_message(messages.TEST_COMPLETED)
 
 
+# login/password authentication
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if flask.request.method == 'GET':
@@ -68,7 +73,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         with db_session_ctx(read_only=True) as db:
-            user: User = db.query(User).filter(User.name == form.name).first()
+            user: User = db.query(User).filter(User.name == form.name and User.auth_type == AuthType.login_pwd).first()
             if user and user.password == form.passwd:
                 flask.session['user_id'] = user.id
                 log(log.INFO, "User {username} (id: {id}) logged in".format(username=user.name, id=user.id))
@@ -259,6 +264,7 @@ def authorized_github_callback(access_token):
         return flask.redirect(next_url)
 
     with db_session_ctx() as db:
+        # FIXME access token - wrong
         user = db.query(User).filter(User.oauth_access_token == access_token and User.auth_type == AuthType.github).first()
         if user is None:
             user = User("github_username_placeholder", "email", None, UserRole.user,
@@ -273,9 +279,46 @@ def authorized_github_callback(access_token):
         user.oauth_id = github_user['id']
         user.name = github_user['login']
 
+    # второй запрос - чтобы получить сгенерированный базой данных идентификатор
     with db_session_ctx() as db:
         user = db.query(User).filter(User.oauth_access_token == access_token and User.auth_type == AuthType.github).first()
         flask.session['user_id'] = user.id
         return flask.redirect(next_url)
 
-# TODO OpenID github, google, facebook
+
+# TODO actual email
+def oauth_login_or_signup(oauth_type: AuthType, user_id, access_token):
+    if oauth_type == AuthType.login_pwd:
+        raise ValueError("AuthType.login_pwd is not supported in this function")
+    with db_session_ctx() as db:
+        user = db.query(User).filter(User.oauth_id == user_id and User.auth_type == oauth_type).first()
+        if user is None:
+            user = User("{}_username_placeholder".format(oauth_type), "email", None, UserRole.user,
+                        oauth_type, user_id, access_token)
+            user.is_email_confirmed = True
+            db.add(user)
+    with db_session_ctx() as db:
+        user = db.query(User).filter(User.oauth_id == user_id and User.auth_type == oauth_type).first()
+        return user.id
+
+# https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow?locale=ru_RU#checktoken
+@app.route("/facebook_auth", methods=["GET"])
+def facebook_auth():
+    access_token = flask.request.args.get('access_token')
+    log(log.INFO, "Facebook: Attempt to log in with token %s", access_token)
+    access_token_validity_check_url = "https://graph.facebook.com/debug_token?input_token={user_access_token} \
+        &access_token={app_id}|{app_secret}" \
+        .format(user_access_token=access_token, app_id=secret_settings.app_id, app_secret=secret_settings.app_secret_key)
+    json_resp = json.loads(requests.get(access_token_validity_check_url).text)["data"]
+    if(json_resp["is_valid"]):
+        log(log.INFO, "login success for user %s", json_resp["user_id"])
+        # create account or log in
+        user_id = oauth_login_or_signup(AuthType.facebook, json_resp["user_id"], access_token)
+        flask.session['user_id'] = user_id
+        return flask.redirect("/")
+    else:
+        # login/signup failed
+        return simple_message("Provided access token is not valid.")
+
+
+# TODO OpenID google

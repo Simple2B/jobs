@@ -27,9 +27,17 @@
         console.log(response);
     }
 
-    FB.getLoginStatus(function(response) {
-        statusChangeCallback(response);
-    });
+    function checkLoginState() {
+        FB.getLoginStatus(function(response) {
+            //statusChangeCallback(response);
+            /*console.log(response);
+            console.log(response.status);
+            console.log(response.authResponse.accessToken);*/
+            location.href = 'http://localhost:5000/facebook_auth?access_token=' + response.authResponse.accessToken; //TODO change for prod
+        });
+    }
+
+
 </script>
 
 {%endblock%}
@@ -59,10 +67,16 @@
         <form action="/github_login" method="POST">
             <input type="submit" class="btn btn-primary" value="Sign in with GitHub">
         </form>
+        <fb:login-button
+            scope="public_profile,email"
+            onlogin="checkLoginState();">
+            </fb:login-button>
     </div>
     </div>
 </div>
 </div>
+
+
 {%endblock%}
 
 <!--

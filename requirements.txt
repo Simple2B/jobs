@@ -7,3 +7,4 @@ Flask-Mail
 pytest
 selenium
 Github-Flask
+google-api-python-client

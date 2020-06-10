@@ -253,9 +253,12 @@ def token_getter():
 
 @app.route("/github_login", methods=['POST'])
 def github_login():
+    # если пользователь разрешил сайту вход через гитхаб, и после этого база данных была пересоздана,
+    # при логине не пересоздаётся пользователь. по идее так и надо, никто в здравом уме не будет удалять базу данных.
     return github.authorize()
 
 
+# эта функция вызывается только первый раз, когда пользователь позволяет сайту получить  доступ к своему аккаунту.
 @app.route("/github_auth_callback")
 @github.authorized_handler
 def authorized_github_callback(access_token):
@@ -301,6 +304,7 @@ def oauth_login_or_signup(oauth_type: AuthType, user_id, access_token):
         user = db.query(User).filter(User.oauth_id == user_id and User.auth_type == oauth_type).first()
         return user.id
 
+# вызывается каждый раз, когда пользователь входит через login.html
 # https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow?locale=ru_RU#checktoken
 @app.route("/facebook_auth", methods=["GET"])
 def facebook_auth():
@@ -311,14 +315,19 @@ def facebook_auth():
         .format(user_access_token=access_token, app_id=secret_settings.app_id, app_secret=secret_settings.app_secret_key)
     json_resp = json.loads(requests.get(access_token_validity_check_url).text)["data"]
     if(json_resp["is_valid"]):
-        log(log.INFO, "login success for user %s", json_resp["user_id"])
         # create account or log in
+        log(log.INFO, "login success for user %s", json_resp["user_id"])
         user_id = oauth_login_or_signup(AuthType.facebook, json_resp["user_id"], access_token)
         flask.session['user_id'] = user_id
         return flask.redirect("/")
     else:
         # login/signup failed
+        log(log.INFO, "login fail for user, provided access token: %s", access_token)
         return simple_message("Provided access token is not valid.")
 
+
+@app.route("/google_auth_callback")
+def google_auth_callback():
+    pass
 
 # TODO OpenID google

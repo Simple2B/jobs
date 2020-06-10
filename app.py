@@ -253,6 +253,7 @@ def token_getter():
 
 @app.route("/github_login", methods=['POST'])
 def github_login():
+    log(log.INFO, "github login")
     # если пользователь разрешил сайту вход через гитхаб, и после этого база данных была пересоздана,
     # при логине не пересоздаётся пользователь. по идее так и надо, никто в здравом уме не будет удалять базу данных.
     return github.authorize()
@@ -262,29 +263,28 @@ def github_login():
 @app.route("/github_auth_callback")
 @github.authorized_handler
 def authorized_github_callback(access_token):
+    log(log.INFO, "authorized_github_callback")
     next_url = "/"
     if access_token is None:
         return flask.redirect(next_url)
 
-    with db_session_ctx() as db:
-        # FIXME access token - wrong
-        user = db.query(User).filter(User.oauth_access_token == access_token and User.auth_type == AuthType.github).first()
-        if user is None:
-            user = User("github_username_placeholder", "email", None, UserRole.user,
+    flask.g.user = User("github_username_placeholder", "email", None, UserRole.user,
                         AuthType.github, "github_id_placeholder", access_token)
-            user.is_email_confirmed = True
-            db.add(user)
+    flask.g.user.is_email_confirmed = True
+    github_user = github.get('/user')
+    flask.g.user.oauth_id = github_user['id']
+    flask.g.user.name = github_user['login']
 
-        # Not necessary to get these details here
-        # but it helps humans to identify users easily.
-        flask.g.user = user
-        github_user = github.get('/user')
-        user.oauth_id = github_user['id']
-        user.name = github_user['login']
+    with db_session_ctx() as db:
+        user = db.query(User).filter(User.oauth_id == github_user['id'] and User.auth_type == AuthType.github).first()
+        if user is None:
+            db.add(flask.g.user)
+        else:
+            user.access_token = access_token
 
     # второй запрос - чтобы получить сгенерированный базой данных идентификатор
     with db_session_ctx() as db:
-        user = db.query(User).filter(User.oauth_access_token == access_token and User.auth_type == AuthType.github).first()
+        user = db.query(User).filter(User.oauth_id == github_user['id'] and User.auth_type == AuthType.github).first()
         flask.session['user_id'] = user.id
         return flask.redirect(next_url)
 

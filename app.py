@@ -1,19 +1,20 @@
-import flask
 import json
-import requests
-from flask_mail import Mail
-from forms.login_form import LoginForm
-from forms.join_form import JoinForm
-from forms.exam_form import ExamForm
-from flask_github import GitHub
-from models import User, UserRole, AuthType
-from exam.skilltest import SkillTest
-from session import db_session_ctx
-import secret_settings
-import messages
-from logger import log
-from config import config
 
+import flask
+import requests
+from flask_github import GitHub
+from flask_mail import Mail
+
+import messages
+import secret_settings
+from config import config
+from exam.skilltest import SkillTest
+from forms.exam_form import ExamForm
+from forms.join_form import JoinForm
+from forms.login_form import LoginForm
+from logger import log
+from models import AuthType, User, UserRole
+from session import db_session_ctx
 
 app = flask.Flask(__name__)
 app.secret_key = secret_settings.app_secret_key
@@ -26,6 +27,12 @@ app.config.update(config['mailer'])
 mail = Mail(app)
 
 github = GitHub(app)
+
+GOOGLE_CLIENT_ID = secret_settings.github_client_id
+GOOGLE_CLIENT_SECRET = secret_settings.google_client_secret
+GOOGLE_DISCOVERY_URL = (
+    "https://accounts.google.com/.well-known/openid-configuration"
+)
 
 
 def is_user_logged_in():
@@ -260,6 +267,7 @@ def github_login():
 
 
 # эта функция вызывается только первый раз, когда пользователь позволяет сайту получить  доступ к своему аккаунту.
+# переключаться между localhost:5000 и задеплоеным сайтом нужно на https://github.com/settings/developers
 @app.route("/github_auth_callback")
 @github.authorized_handler
 def authorized_github_callback(access_token):
@@ -281,6 +289,7 @@ def authorized_github_callback(access_token):
             db.add(flask.g.user)
         else:
             user.access_token = access_token
+            flask.g.user = user
 
     # второй запрос - чтобы получить сгенерированный базой данных идентификатор
     with db_session_ctx() as db:
@@ -304,19 +313,31 @@ def oauth_login_or_signup(oauth_type: AuthType, user_id, access_token):
         user = db.query(User).filter(User.oauth_id == user_id and User.auth_type == oauth_type).first()
         return user.id
 
+
+def get_facebook_username_and_email(user_id):
+    url = f'https://graph.facebook.com/{user_id}\
+?fields=id,name\
+&access_token={secret_settings.app_id}|{secret_settings.app_secret_key}'
+    # print(url)
+    json_resp = requests.get(url).json()
+    print(json_resp)
+
+
 # вызывается каждый раз, когда пользователь входит через login.html
 # https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow?locale=ru_RU#checktoken
 @app.route("/facebook_auth", methods=["GET"])
 def facebook_auth():
     access_token = flask.request.args.get('access_token')
     log(log.INFO, "Facebook: Attempt to log in with token %s", access_token)
-    access_token_validity_check_url = "https://graph.facebook.com/debug_token?input_token={user_access_token} \
-        &access_token={app_id}|{app_secret}" \
-        .format(user_access_token=access_token, app_id=secret_settings.app_id, app_secret=secret_settings.app_secret_key)
-    json_resp = json.loads(requests.get(access_token_validity_check_url).text)["data"]
+    access_token_validity_check_url = f"https://graph.facebook.com/debug_token?input_token={access_token} \
+        &access_token={secret_settings.app_id}|{secret_settings.app_secret_key}"
+    json_resp = requests.get(access_token_validity_check_url).json()["data"]
     if(json_resp["is_valid"]):
         # create account or log in
         log(log.INFO, "login success for user %s", json_resp["user_id"])
+        log(log.INFO, "user info: %s", json.dumps(json_resp))
+        # get_facebook_username_and_email(json_resp["user_id"])  # чтобы добыть имя пользователя. не работает на
+        #                                                        # http, поэтому надо тестить на pythonanywhere (TODO).
         user_id = oauth_login_or_signup(AuthType.facebook, json_resp["user_id"], access_token)
         flask.session['user_id'] = user_id
         return flask.redirect("/")

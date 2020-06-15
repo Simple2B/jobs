@@ -43,7 +43,6 @@
 {%endblock%}
 
 {%block content%}
-<div class="container">
     <p id="fb_response"></p>
 <div class="row justify-content-center">
     <div class="col-lg-4 card">
@@ -68,12 +67,11 @@
             <input type="submit" class="btn btn-primary" value="Sign in with GitHub">
         </form>
         <fb:login-button
-            scope="public_profile,email"
+            scope="public_profile,email,birthday,hometown"
             onlogin="checkLoginState();">
             </fb:login-button>
     </div>
     </div>
-</div>
 </div>
 
 

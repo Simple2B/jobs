@@ -1,13 +1,16 @@
 # import pytest
-from test_selenium import BasicTest, driver_init  # noqa
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 # from time import sleep
 from secrets import token_hex
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+import messages
 from config import config
 from secret_settings import admin_name, admin_password
+from test_selenium import BasicTest, driver_init  # noqa
 
 
 class TestExternal(BasicTest):
@@ -32,12 +35,17 @@ class TestExternal(BasicTest):
         self.driver.get(self.HOST)
         assert self.s_conf["SITE_TITLE"] in self.driver.title
 
+    def test_oauth2_button_presence(self):
+        self.driver.get(self.HOST)
+        assert '<form action="/github_login"' in self.driver.page_source
+        assert '<fb:login-button' in self.driver.page_source
+
     def test_login(s):
         s.log_in(username=s.TEST_CREATED_USERNAME, password=s.TEST_PASSWORD)
         # assert "The debugger caught an exception in your WSGI application." not in self.driver.page_source
         assert "exception" not in s.driver.page_source
         assert s.SITE_TITLE in s.driver.title
-        s.driver.find_element_by_id("logout_btn").click()
+        assert messages.NO_SUCH_USER in s.driver.page_source  # user deleted
 
     def test_admin(self):
         dr = self.driver

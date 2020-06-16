@@ -376,8 +376,8 @@ def facebook_auth():
 
 # https://developers.google.com/identity/sign-in/web/backend-auth
 # called from login.html onSignIn()
-@app.route("/google_auth")
-def google_auth_callback(request):
+@app.route("/google_auth", methods=["GET"])
+def google_auth_callback():
     try:
         access_token = flask.request.args.get('access_token')
         # Specify the CLIENT_ID of the app that accesses the backend:

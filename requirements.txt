@@ -8,3 +8,6 @@ pytest
 selenium
 Github-Flask
 google-api-python-client
+oauthlib
+google-auth
+pyOpenSsl

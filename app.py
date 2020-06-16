@@ -4,6 +4,7 @@ import flask
 import requests
 from flask_github import GitHub
 from flask_mail import Mail
+from oauthlib.oauth2 import WebApplicationClient
 
 import messages
 import secret_settings
@@ -28,11 +29,14 @@ mail = Mail(app)
 
 github = GitHub(app)
 
-GOOGLE_CLIENT_ID = secret_settings.github_client_id
+GOOGLE_CLIENT_ID = secret_settings.google_client_id
 GOOGLE_CLIENT_SECRET = secret_settings.google_client_secret
 GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
+
+# OAuth 2 client setup for google
+client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 
 def is_user_logged_in():
@@ -347,8 +351,33 @@ def facebook_auth():
         return simple_message("Provided access token is not valid.")
 
 
+def get_google_provider_cfg():
+    return requests.get(GOOGLE_DISCOVERY_URL).json()
+
+
+# https://realpython.com/flask-google-login/
+@app.route("/google_login", methods=["GET"])
+def google_login():
+    # Find out what URL to hit for Google login
+    google_provider_cfg = get_google_provider_cfg()
+    authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+
+    # Use library to construct the request for Google login and provide
+    # scopes that let you retrieve user's profile from Google
+    request_uri = client.prepare_request_uri(
+        authorization_endpoint,
+        redirect_uri="/google_auth_callback",
+        scope=["openid", "email", "profile"],
+    )
+    return flask.redirect(request_uri)
+
+
 @app.route("/google_auth_callback")
 def google_auth_callback():
-    pass
-
-# TODO OpenID google
+    # Get authorization code Google sent back to you
+    code = request.args.get("code")
+    # Find out what URL to hit to get tokens that allow you to ask for things on behalf of a user
+    google_provider_cfg = get_google_provider_cfg()
+    token_endpoint = google_provider_cfg["token_endpoint"]
+    
+    # TODO OpenID google

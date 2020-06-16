@@ -36,8 +36,19 @@
             location.href = 'http://localhost:5000/facebook_auth?access_token=' + response.authResponse.accessToken; //TODO change for prod
         });
     }
+</script>
 
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+<meta name="google-signin-client_id" content="921611173768-ae440i8s5p70po5muu7ukn8jl0k33k7a.apps.googleusercontent.com"> <!-- content="YOUR_CLIENT_ID.apps.googleusercontent.com" -->
 
+<script>
+function onSignIn(googleUser) {
+    var profile = googleUser.getBasicProfile();
+    console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+    console.log('Name: ' + profile.getName());
+    console.log('Image URL: ' + profile.getImageUrl());
+    console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+  }
 </script>
 
 {%endblock%}
@@ -69,7 +80,8 @@
         <fb:login-button
             scope="public_profile,email,birthday,hometown"
             onlogin="checkLoginState();">
-            </fb:login-button>
+        </fb:login-button>
+        <div class="g-signin2" data-onsuccess="onSignIn"></div>
     </div>
     </div>
 </div>

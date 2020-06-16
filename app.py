@@ -4,7 +4,9 @@ import flask
 import requests
 from flask_github import GitHub
 from flask_mail import Mail
-from oauthlib.oauth2 import WebApplicationClient
+# from oauthlib.oauth2 import WebApplicationClient
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 import messages
 import secret_settings
@@ -29,14 +31,14 @@ mail = Mail(app)
 
 github = GitHub(app)
 
-GOOGLE_CLIENT_ID = secret_settings.google_client_id
-GOOGLE_CLIENT_SECRET = secret_settings.google_client_secret
-GOOGLE_DISCOVERY_URL = (
-    "https://accounts.google.com/.well-known/openid-configuration"
-)
+# GOOGLE_CLIENT_ID = secret_settings.google_client_id
+# GOOGLE_CLIENT_SECRET = secret_settings.google_client_secret
+# GOOGLE_DISCOVERY_URL = (
+#     "https://accounts.google.com/.well-known/openid-configuration"
+# )
 
-# OAuth 2 client setup for google
-client = WebApplicationClient(GOOGLE_CLIENT_ID)
+# # OAuth 2 client setup for google
+# client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 
 def is_user_logged_in():
@@ -351,33 +353,55 @@ def facebook_auth():
         return simple_message("Provided access token is not valid.")
 
 
-def get_google_provider_cfg():
-    return requests.get(GOOGLE_DISCOVERY_URL).json()
+# def get_google_provider_cfg():
+#     return requests.get(GOOGLE_DISCOVERY_URL).json()
 
 
-# https://realpython.com/flask-google-login/
-@app.route("/google_login", methods=["GET"])
-def google_login():
-    # Find out what URL to hit for Google login
-    google_provider_cfg = get_google_provider_cfg()
-    authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+# # https://realpython.com/flask-google-login/
+# @app.route("/google_login", methods=["GET"])
+# def google_login():
+#     # Find out what URL to hit for Google login
+#     google_provider_cfg = get_google_provider_cfg()
+#     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
 
-    # Use library to construct the request for Google login and provide
-    # scopes that let you retrieve user's profile from Google
-    request_uri = client.prepare_request_uri(
-        authorization_endpoint,
-        redirect_uri="/google_auth_callback",
-        scope=["openid", "email", "profile"],
-    )
-    return flask.redirect(request_uri)
+#     # Use library to construct the request for Google login and provide
+#     # scopes that let you retrieve user's profile from Google
+#     request_uri = client.prepare_request_uri(
+#         authorization_endpoint,
+#         redirect_uri="/google_auth_callback",
+#         scope=["openid", "email", "profile"],
+#     )
+#     return flask.redirect(request_uri)
 
 
-@app.route("/google_auth_callback")
+# https://developers.google.com/identity/sign-in/web/backend-auth
+# called from login.html onSignIn()
+@app.route("/google_auth")
 def google_auth_callback(request):
-    # Get authorization code Google sent back to you
-    code = request.args.get("code")
-    # Find out what URL to hit to get tokens that allow you to ask for things on behalf of a user
-    google_provider_cfg = get_google_provider_cfg()
-    token_endpoint = google_provider_cfg["token_endpoint"]
+    try:
+        access_token = flask.request.args.get('access_token')
+        # Specify the CLIENT_ID of the app that accesses the backend:
+        idinfo = id_token.verify_oauth2_token(access_token, google_requests.Request(), secret_settings.google_client_id)
+        print(idinfo)
+        # Or, if multiple clients access the backend server:
+        # idinfo = id_token.verify_oauth2_token(token, requests.Request())
+        # if idinfo['aud'] not in [CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]:
+        #     raise ValueError('Could not verify audience.')
 
-    # TODO OpenID google
+        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise ValueError('Wrong issuer.')
+
+        # If auth request is from a G Suite domain:
+        # if idinfo['hd'] != GSUITE_DOMAIN_NAME:
+        #     raise ValueError('Wrong hosted domain.')
+
+        # ID token is valid. Get the user's Google Account ID from the decoded token.
+        oauth_id = idinfo['sub']
+        print(oauth_id)
+
+        user_id = oauth_login_or_signup(AuthType.google, oauth_id, access_token)
+        flask.session['user_id'] = user_id
+        return flask.redirect("/")
+    except ValueError as ve:
+        # Invalid token
+        return simple_message("Access token error: " + ve.message)

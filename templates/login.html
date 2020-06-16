@@ -33,7 +33,8 @@
             /*console.log(response);
             console.log(response.status);
             console.log(response.authResponse.accessToken);*/
-            location.href = 'http://localhost:5000/facebook_auth?access_token=' + response.authResponse.accessToken; //TODO change for prod
+            //location.href = 'http://localhost:5000/facebook_auth?access_token=' + response.authResponse.accessToken; //TODO change for prod
+            location.href = 'https://flav1us.pythonanywhere.com/facebook_auth?access_token=' + response.authResponse.accessToken;
         });
     }
 </script>
@@ -48,6 +49,8 @@ function onSignIn(googleUser) {
     console.log('Name: ' + profile.getName());
     console.log('Image URL: ' + profile.getImageUrl());
     console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+    //location.href = 'http://localhost:5000/google_auth?access_token=' + googleUser.getAuthResponse().id_token; //TODO change for prod
+    location.href = 'https://flav1us.pythonanywhere.com/google_auth?access_token=' + googleUser.getAuthResponse().id_token; //TODO change for prod
   }
 </script>
 
